@@ -1,0 +1,8 @@
+numpy>=1.24
+xarray>=2024.3.0
+netCDF4>=1.6.5
+cftime>=1.6.3
+
+# PyTorch — wheels vary by OS/CUDA, so a plain `pip install` may fail on some systems.
+# If you run into issues, please follow the official installation guide: https://pytorch.org/get-started/locally/
+torch>=2.2
