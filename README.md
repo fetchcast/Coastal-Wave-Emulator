@@ -6,7 +6,7 @@ A minimal, inference-only pipeline for a UNet++–ConvLSTM emulator of nearshore
 
 2.What’s not here: training scripts and large datasets (kept out to keep things simple)
 
-# repo
+repo
 ├─ main.py
 ├─ requirements.txt
 ├─ assets/
@@ -22,19 +22,19 @@ A minimal, inference-only pipeline for a UNet++–ConvLSTM emulator of nearshore
 │     ├─ norm.py
 │     └─ inference.py
 
-Quick start
-1) Install
+# Quick start
+# 1) Install
 
 python -m venv .venv
 activate your venv, then:
 pip install -r requirements.txt
 
-2) Unzip the sample data
+# 2) Unzip the sample data
 
 The sample is compressed as data/sample_0010.zip.
 Unzip it first to get data/sample_0010.nc (10 time steps).
 
-3) Run inference
+# 3) Run inference
 
 python main.py \
   --checkpoint assets/20250906_032209_model_weights_17498_seq6_epochs20_hid128_UNET32_bndON.pth \
@@ -51,7 +51,7 @@ These weights were trained with L=6. The 10-step sample works out of the box (it
 
 Use --device cuda if you have a GPU.
 
-4) Outputs
+# 4) Outputs
 
 outputs/demo/predictions.npz containing:
 
