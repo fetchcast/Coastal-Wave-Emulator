@@ -1,4 +1,4 @@
-Coastal-Wave-Emulator (Inference Only)
+# Coastal-Wave-Emulator (Inference Only)
 
 A minimal, inference-only pipeline for a UNet++–ConvLSTM emulator of nearshore waves.
 
@@ -6,7 +6,7 @@ A minimal, inference-only pipeline for a UNet++–ConvLSTM emulator of nearshore
 
 2.What’s not here: training scripts and large datasets (kept out to keep things simple)
 
-repo/
+# repo
 ├─ main.py
 ├─ requirements.txt
 ├─ assets/
@@ -26,7 +26,7 @@ Quick start
 1) Install
 
 python -m venv .venv
-# activate your venv, then:
+activate your venv, then:
 pip install -r requirements.txt
 
 2) Unzip the sample data
