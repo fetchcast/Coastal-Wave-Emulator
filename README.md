@@ -6,33 +6,6 @@ A minimal, inference-only pipeline for a UNet++–ConvLSTM emulator of nearshore
 
 2.What’s not here: training scripts and large datasets (kept out to keep things simple)
 
-|   LICENSE
-|   README.md
-|   requirements.txt
-|   tree.txt
-|   
-+---assets
-|       norm_params.json
-|       
-+---data
-|       sample_0010.zip
-|       
-+---src
-|   \---swan_emul
-|           dataio.py
-|           inference
-|           main
-|           model
-|           norm
-|           __init__.py
-|           
-\---weights
-        20250906_032209_model_weights_17498_seq6_epochs20_hid128_UNET32_bndON.pth
-        20250919_110000_model_weights_17498_seq12_epochs20_hid128_UNET32_bndON.pth
-        model.pt
-        
-
-
 # Quick start
 # 1) Install
 
