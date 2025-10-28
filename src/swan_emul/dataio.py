@@ -32,7 +32,7 @@ def build_inputs(ds, normp, T=None, bnd_mode="auto"):
 
     has_bnd = all(k in ds for k in ("bnd_hs","bnd_tm","bnd_dir"))
     if bnd_mode == "on" and not has_bnd:
-        raise ValueError("bnd_mode=on 인데 bnd_* 변수가 없습니다.")
+        raise ValueError("bnd_mode=on, but no bnd files found")
     if bnd_mode in ("on","auto") and has_bnd:
         rb = np.deg2rad(ds["bnd_dir"].values[:T].astype("float32"))
         sb, cb = np.sin(rb), np.cos(rb)
