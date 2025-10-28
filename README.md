@@ -8,9 +8,9 @@ A minimal, inference-only pipeline for a UNet++–ConvLSTM emulator of nearshore
 
 **📂 Dataset Structure:**
 
-    ├── assets/                     # Weights and normalization params
+    ├── assets/                     # normalization params
     │   └── norm_params.json
-    ├── weights/                     # Weights and normalization params
+    ├── weights/                     # Weights
     │   └── 20250906_032209_model_weights_17498_seq6_epochs20_hid128_UNET32_bndON.pth
     ├── data/                       # Input NetCDFs 
     │   └── sample_0010.zip         # Compressed demo (10 steps) — unzip first
