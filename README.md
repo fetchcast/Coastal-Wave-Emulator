@@ -7,35 +7,23 @@ A minimal, inference-only pipeline for a UNet++–ConvLSTM emulator of nearshore
 2.What’s not here: training scripts and large datasets (kept out to keep things simple)
 
 **📂 Dataset Structure:**
+
     ├── assets/                     # Weights and normalization params
-    │   ├── norm_params.json
+    │   └── norm_params.json
+    ├── weights/                     # Weights and normalization params
     │   └── 20250906_032209_model_weights_17498_seq6_epochs20_hid128_UNET32_bndON.pth
     ├── data/                       # Input NetCDFs 
-    │   ├── sample_0010.zip         # Compressed demo (10 steps) — unzip first
-    │   ├── sample_0010.nc          # Unzipped demo file
-    │   ├── Train/                  # Training data
-    │   ├── Validation/             # Validation data
-    │   └── Test/                   # Testing data
-    ├── outputs/                    # Inference results (created at runtime)
-    │   └── demo/
-    ├── src/                        # Source code
+    │   └── sample_0010.zip         # Compressed demo (10 steps) — unzip first
+    ├── src/ 
     │   └── swan_emul/
     │       ├── __init__.py
     │       ├── model.py            # UNet++–ConvLSTM model
     │       ├── dataio.py           # NetCDF → tensors, masks, channels
     │       ├── norm.py             # Normalization utils
+    │       ├── main.py             # CLI entry point
     │       └── inference.py        # Inference helpers
-    ├── main.py                     # CLI entry point
     ├── requirements.txt            # Python dependencies
     └── README.md
-
-    ├── assets/                     # Weights and normalization params
-        ├── norm_params.json
-        └── 20250906_032209_model_weights_17498_seq6_epochs20_hid128_UNET32_bndON.pth
-    ├── data/                       # Input NetCDFs 
-        └── sample_0010.zip         # Compressed demo (10 steps) — unzip first
-        
-    ├── Test/        # Testing data
     
     
 # Quick start
