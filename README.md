@@ -37,8 +37,6 @@ Use --device cuda if you have a GPU.
 
 # 4) Outputs
 
-outputs/demo/predictions.npz containing:
-
 hs — (N, H, W) significant wave height [m]
 tm — (N, H, W) mean wave period [s]
 dir — (N, H, W) mean wave direction [deg, 0–360)
