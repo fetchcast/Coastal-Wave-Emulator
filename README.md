@@ -10,7 +10,7 @@ A minimal, inference-only pipeline for a UNet++–ConvLSTM emulator of nearshore
     ├── assets/                     # Weights and normalization params
     │   ├── norm_params.json
     │   └── 20250906_032209_model_weights_17498_seq6_epochs20_hid128_UNET32_bndON.pth
-    ├── data/                       # Input NetCDFs (demo + your own)
+    ├── data/                       # Input NetCDFs 
     │   ├── sample_0010.zip         # Compressed demo (10 steps) — unzip first
     │   ├── sample_0010.nc          # Unzipped demo file
     │   ├── Train/                  # Training data
@@ -29,9 +29,14 @@ A minimal, inference-only pipeline for a UNet++–ConvLSTM emulator of nearshore
     ├── requirements.txt            # Python dependencies
     └── README.md
 
-    ├── Train/       # Training data
-    ├── Validation/  # Validation data
+    ├── assets/                     # Weights and normalization params
+        ├── norm_params.json
+        └── 20250906_032209_model_weights_17498_seq6_epochs20_hid128_UNET32_bndON.pth
+    ├── data/                       # Input NetCDFs 
+        └── sample_0010.zip         # Compressed demo (10 steps) — unzip first
+        
     ├── Test/        # Testing data
+    
     
 # Quick start
 # 1) Install
