@@ -40,14 +40,7 @@ Unzip it first to get data/sample_0010.nc (10 time steps).
 
 # 3) Run inference
 
-python main.py \
-  --checkpoint assets/20250906_032209_model_weights_17498_seq6_epochs20_hid128_UNET32_bndON.pth \
-  --input_nc data/sample_0010.nc \
-  --norm_json assets/norm_params.json \
-  --seq_len 6 \
-  --bnd auto \
-  --device cpu \
-  --outdir outputs/demo
+python main.py --checkpoint weights/20250906_032209_model_weights_17498_seq6_epochs20_hid128_UNET32_bndON.pth --input_nc data/sample_0010.nc --norm_json assets/norm_params.json --seq_len 6 --bnd auto --device cpu --outdir outputs/demo 
 
 These weights were trained with L=6. The 10-step sample works out of the box (it will produce 10 − 6 = 4 predictions).
 
