@@ -29,7 +29,10 @@ A minimal, inference-only pipeline for a UNet++–ConvLSTM emulator of nearshore
     ├── requirements.txt            # Python dependencies
     └── README.md
 
-
+    ├── Train/       # Training data
+    ├── Validation/  # Validation data
+    ├── Test/        # Testing data
+    
 # Quick start
 # 1) Install
 
