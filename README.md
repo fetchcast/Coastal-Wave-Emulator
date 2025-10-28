@@ -20,8 +20,8 @@ A minimal, inference-only pipeline for a UNet++–ConvLSTM emulator of nearshore
     │       ├── model.py            # UNet++–ConvLSTM model
     │       ├── dataio.py           # NetCDF → tensors, masks, channels
     │       ├── norm.py             # Normalization utils
-    │       ├── main.py             # CLI entry point
     │       └── inference.py        # Inference helpers
+    ├── main.py                     # CLI entry point
     ├── requirements.txt            # Python dependencies
     └── README.md
     
