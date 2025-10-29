@@ -28,8 +28,10 @@ A minimal, inference-only pipeline for a UNet++–ConvLSTM emulator of nearshore
 ## Study Region & final results from weight (Typhoon Maysak)
 
 <p align="center">
-  <img src="https://github.com/fetchcast/Coastal-Wave-Emulator/blob/main/figure/f1.jpg" alt="SR" width="600"/>
+  <img src="https://github.com/fetchcast/Coastal-Wave-Emulator/blob/main/figure/maysak_hs.gif" alt="SR" width="600"/>
 </p>
+
+
     
 # Quick start
 # 1) Install
