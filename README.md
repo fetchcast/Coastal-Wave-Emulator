@@ -47,13 +47,26 @@ Unzip it first to get data/sample_0010.nc (10 time steps).
 
 # 3) Run inference
 
-python main.py --checkpoint weights/20250906_032209_model_weights_17498_seq6_epochs20_hid128_UNET32_bndON.pth --input_nc data/sample_0010.nc --norm_json assets/norm_params.json --seq_len 6 --bnd auto --device cpu --outdir outputs/demo --show
+Case A — .nc already contains boundary channels
+(Example: data/sample_0010_with_bnd.nc has hs_bnd, tm_bnd, sin_dir_bnd, cos_dir_bnd)
 
-These weights were trained with L=6. The 10-step sample works out of the box (it will produce 10 − 6 = 4 predictions).
+python main.py --checkpoint weights/20250906_032209_model_weights_17498_seq6_epochs20_hid128_UNET32_bndON.pth --input_nc data/sample_0010_with_bnd.nc --norm_json assets/norm_params_pctl.json --seq_len 6 --bnd on --device cuda --outdir outputs/demo --denorm off --show
 
---bnd auto: if boundary channels are missing in the sample, they are zero-filled internally (fine for smoke tests).
+Case B — .nc does not contain boundary channels
+(Example: data/sample_0010_bnd.nc has no boundary channels)
 
-Use --device cuda if you have a GPU.
+python main.py --checkpoint weights/20250906_032209_model_weights_17498_seq6_epochs20_hid128_UNET32_bndON.pth --input_nc data/sample_0010_bnd.nc --norm_json assets/norm_params_pctl.json --seq_len 6 --bnd auto --device cpu --outdir outputs/demo --denorm off --show
+
+<Notes>
+The checkpoint was trained with L = 6. If your input length is T = 10, the model produces T − L = 4 prediction frames.
+
+--bnd
+on: requires boundary channels in the input and uses them.
+auto: uses them if present; otherwise fills zeros (OK for smoke tests).
+off: ignores boundary channels even if present.
+
+Outputs are already in physical units (Hs in meters, Tm in seconds, direction via sin/cos), so --denorm off is recommended.
+Use --device cuda if you have a GPU; otherwise use --device cpu.
 
 # 4) Outputs
 
