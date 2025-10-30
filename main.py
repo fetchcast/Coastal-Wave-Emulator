@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import argparse, json, os, numpy as np
 from pathlib import Path
 from src.swan_emul.model import load_model
@@ -17,6 +18,10 @@ def parse():
     p.add_argument("--bnd", choices=["on","auto","off"], default="auto")
     p.add_argument("--show", action="store_true")
     p.add_argument("--save_png", type=str, default=None)
+    # NEW: control denormalization
+    p.add_argument("--denorm", choices=["auto","on","off"], default="auto",
+                   help="Apply denorm to outputs. Try --denorm off first to check if checkpoint already outputs physical units.")
+    p.add_argument("--print_stats", action="store_true")
     return p.parse_args()
 
 def _safe_extent(lon, lat):
@@ -35,18 +40,49 @@ def _safe_extent(lon, lat):
     except Exception:
         return None
 
+def _maybe_denorm(raw, params, mode):
+    if mode == "off":
+        return raw
+    if mode == "on":
+        return denorm(raw, *params)
+    # auto: simple heuristic — if raw looks already physical (median within [0,12])
+    med = float(np.nanmedian(raw))
+    if 0.0 <= med <= 12.0:
+        return raw  # already physical
+    # else try denorm
+    out = denorm(raw, *params)
+    return out
+
+def _print_basic(name, arr):
+    print(f"[{name}] shape={arr.shape} min={np.nanmin(arr):.3f} med={np.nanmedian(arr):.3f} max={np.nanmax(arr):.3f}")
+
 def main():
     a = parse()
     os.makedirs(a.outdir, exist_ok=True)
     normp = load_norm_params(a.norm_json)
     ds = load_xr(a.input_nc)
     X, Y, lon, lat, kcs = build_inputs(ds, normp, bnd_mode=a.bnd)
-    m = load_model(a.checkpoint, in_ch=X.shape[1], out_ch=4, hidden=128, maploc=a.device)
-    pred = run_inference(m, X, L=a.seq_len, batch=a.batch, device=a.device)
 
-    hs = denorm(pred[:,0], *normp["hs"])
-    tm = denorm(pred[:,1], *normp["tm"])
-    ang = (np.rad2deg(np.arctan2(pred[:,2], pred[:,3])) % 360.0)
+    m = load_model(a.checkpoint, in_ch=X.shape[1], out_ch=4, hidden=128, maploc=a.device)
+    pred = run_inference(m, X, L=a.seq_len, batch=a.batch, device=a.device)  # (T', 4, H, W)
+
+    # raw outputs
+    hs_raw = pred[:, 0]
+    tm_raw = pred[:, 1]
+    ang_raw = (np.rad2deg(np.arctan2(pred[:, 2], pred[:, 3])) % 360.0)
+
+    if a.print_stats:
+        _print_basic("hs_raw", hs_raw)
+        _print_basic("tm_raw", tm_raw)
+
+    # apply (or skip) denorm
+    hs = _maybe_denorm(hs_raw, normp["hs"], a.denorm)
+    tm = _maybe_denorm(tm_raw, normp["tm"], a.denorm)
+    ang = ang_raw
+
+    if a.print_stats:
+        _print_basic("hs_final", hs)
+        _print_basic("tm_final", tm)
 
     out_npz = os.path.join(a.outdir, "predictions.npz")
     np.savez(out_npz, hs=hs, tm=tm, dir=ang)
