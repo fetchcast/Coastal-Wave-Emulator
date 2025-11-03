@@ -54,7 +54,7 @@ Case A — .nc already contains boundary channels
 python main.py --checkpoint weights/20250906_032209_model_weights_17498_seq6_epochs20_hid128_UNET32_bndON.pth --input_nc data/sample_0010_with_bnd.nc --norm_json assets/norm_params_pctl.json --seq_len 6 --bnd on --device cpu --outdir outputs/demo --denorm off --show
 
 Case B — .nc does not contain boundary channels
-(Example: data/sample_0010_bnd.nc has no boundary channels)
+(Example: data/sample_0010.nc has no boundary channels)
 
 python main.py --checkpoint weights/20250906_032209_model_weights_17498_seq6_epochs20_hid128_UNET32_bndON.pth --input_nc data/sample_0010.nc --norm_json assets/norm_params_pctl.json --seq_len 6 --bnd auto --device cpu --outdir outputs/demo --denorm off --show
 
