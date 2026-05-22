@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+title: "Coastal-Wave-Emulator: A Boundary-Informed UNet++–ConvLSTM Emulator of SWAN Hindcasts for Nearshore Wave-Field Reconstruction"
+message: "If you use this code or the trained weights, please cite the accompanying paper."
+type: software
+authors:
+  - family-names: Kim
+    given-names: Jinyoung
+    affiliation: "School of Civil, Environmental and Architectural Engineering, Korea University, Seoul 02841, South Korea"
+  - family-names: Son
+    given-names: Sangyoung
+    affiliation: "School of Civil, Environmental and Architectural Engineering, Korea University, Seoul 02841, South Korea"
+    email: sson@korea.ac.kr
+repository-code: "https://github.com/fetchcast/Coastal-Wave-Emulator"
+license: Apache-2.0
+
+preferred-citation:
+  type: article
+  title: "A Boundary-Informed UNet++–ConvLSTM Emulator of SWAN Hindcasts for Nearshore Wave-Field Reconstruction"
+  authors:
+    - family-names: Kim
+      given-names: Jinyoung
+    - family-names: Son
+      given-names: Sangyoung
+  journal: "Applied Ocean Research"
+  year: 2026
+  # Add the following fields once the paper is accepted:
+  # volume:
+  # start:
+  # end:
+  # doi:
