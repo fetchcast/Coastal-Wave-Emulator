@@ -50,35 +50,35 @@ except Exception:
 # Fonts (Korean-safe)
 # ----------------------------
 def _set_arial_font():
-    # (선택) 스크립트 폴더에 Arial.ttf 등이 있다면 등록
+    # (optional) Register custom fonts (e.g., Arial.ttf) if present in script folder
     for fname in ("Arial.ttf", "arial.ttf", "Arial Unicode MS.ttf", "ArialUnicodeMS.ttf"):
         p = os.path.join(os.path.dirname(__file__), fname)
         if os.path.isfile(p):
             fm.fontManager.addfont(p)
 
-    # 사용 가능한 폰트 확인
+    # Check available fonts
     available = {f.name for f in fm.fontManager.ttflist}
 
-    # 기본: Arial, 없으면 Liberation Sans/Helvetica/DejaVu Sans로 유사 폰트 대체
+    # Default: Arial; fall back to Liberation Sans / Helvetica / DejaVu Sans if missing
     arial_like = [f for f in ("Arial", "ArialMT", "Liberation Sans", "Helvetica", "DejaVu Sans") if f in available]
-    # 한글 폴백(시스템에 있는 것만)
+    # Korean-glyph fallback (only those available on the system)
     korean_fallback = [f for f in ("Malgun Gothic", "AppleGothic", "NanumGothic", "Noto Sans CJK KR") if f in available]
 
-    # 폰트 패밀리 우선순위(앞에서부터 시도)
+    # Font-family priority (tried from front to back)
     matplotlib.rcParams["font.family"] = arial_like + korean_fallback
     matplotlib.rcParams["axes.unicode_minus"] = False
 
-    # 수식 폰트가 산세리프(Arial과 어울리는 계열)로 보이도록
-    matplotlib.rcParams["mathtext.fontset"] = "dejavusans"  # 또는 'stixsans'
+    # Make math text use a sans-serif font that matches Arial
+    matplotlib.rcParams["mathtext.fontset"] = "dejavusans"  # or 'stixsans'
 
-    # PDF/SVG에 실제 글꼴 임베딩
+    # Embed the actual fonts into PDF/SVG output
     matplotlib.rcParams["svg.fonttype"] = "none"
     matplotlib.rcParams["pdf.fonttype"] = 42
 
 _set_arial_font()
 
 # ----------------------------
-# [VECTOR EXPORT] 전역 설정 + 래스터화 개선
+# [VECTOR EXPORT] Global settings + improved rasterization
 # ----------------------------
 matplotlib.rcParams['svg.fonttype'] = 'none'
 matplotlib.rcParams['pdf.fonttype'] = 42
@@ -134,15 +134,15 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"[INFO] Using device: {device}")
 
 # ===== Global knobs =====
-# 하한(threshold)보다 작은 참값은 MAPE 평균에서 제외해 폭주를 방지
+# Exclude ground-truth values below the threshold from MAPE averaging to avoid blow-up
 MAPE_THRESH = {'hs': 0.25,  'tm': 1.0}  # units: m, s
 
 # ======= Missing pieces: drop-in implementations =======
 
 def _depth_grad_mag(depth2d: np.ndarray) -> np.ndarray:
     """
-    수심(deptn) 2D 배열의 기울기 크기 |∇depth| 를 [0,1]로 강건 정규화.
-    NaN은 주변 최근접값으로 채운 뒤 계산, 최종 NaN은 0으로.
+    Robustly normalize the gradient magnitude |grad(depth)| of a 2D depth array to [0,1].
+    NaN values are filled with the nearest neighbour before computation; remaining NaN are set to 0.
     """
     a = np.asarray(depth2d, dtype=np.float32)
     if a.ndim == 3:
@@ -151,14 +151,14 @@ def _depth_grad_mag(depth2d: np.ndarray) -> np.ndarray:
     if not valid.any():
         return np.zeros_like(a, dtype=np.float32)
 
-    # 빈 곳 메우기
+    # Fill missing values
     a_filled = _fill_invalid_with_nearest(a)
 
-    # 단순 그래디언트
+    # Simple gradient
     gy, gx = np.gradient(a_filled.astype(np.float32))
     g = np.hypot(gx, gy)
 
-    # 강건 정규화(1–99백분위)
+    # Robust normalization (1-99 percentile)
     p1, p99 = np.nanpercentile(g[valid], [1.0, 99.0])
     if not np.isfinite(p1): p1 = 0.0
     if not np.isfinite(p99) or p99 <= p1:
@@ -215,6 +215,8 @@ def load_all_station_data(station_root: str, norm_params: dict, time_index: pd.D
             df.columns = [str(c).replace("\ufeff", "").strip() for c in df.columns]
 
             time_col = None
+            # Match Korean and English time-column headers used by KHOA buoy CSV files.
+            # Korean keywords: '관측시간' (observation time), '시간' (time).
             for c in df.columns:
                 c_l = str(c).lower()
                 if ("관측시간" in str(c) or "시간" in str(c)
@@ -236,6 +238,9 @@ def load_all_station_data(station_root: str, norm_params: dict, time_index: pd.D
                     .sort_index())
             df = df[~df.index.duplicated(keep="first")]
 
+            # Match Korean and English column names used by KHOA buoy CSV files.
+            # Korean keywords: '유의파고' = significant wave height, '유의파주기' / '파주기' = wave period,
+            # '파향' = wave direction, '주기' = period (used in exclude list).
             hs_obs = _pick_column(df, ["유의파고", "hsig", "hs"], exclude=["주기", "period", "tm"])
             tm_obs = _pick_column(df, ["유의파주기", "파주기", "period", "tm"])
             dir_obs = _pick_column(df, ["파향", "dir", "wdir", "direction"], exclude=["주기", "period", "tm"])
@@ -282,7 +287,7 @@ def _scatter_ax(ax, x, y, title, xlabel, ylabel):
     ax.set_xlabel(xlabel, fontsize=FONT_SIZES["label"])
     ax.set_ylabel(ylabel, fontsize=FONT_SIZES["label"])
     ax.tick_params(labelsize=FONT_SIZES["tick"])
-    # 간단 통계
+    # Quick statistics
     rmse = np.sqrt(np.mean((x[m]-y[m])**2))
     r = np.corrcoef(x[m], y[m])[0,1] if m.sum()>1 else np.nan
     ax.text(0.02, 0.98, f"RMSE={rmse:.3f}\nr={r:.3f}", transform=ax.transAxes,
@@ -291,10 +296,10 @@ def _scatter_ax(ax, x, y, title, xlabel, ylabel):
 
 def create_scatter_plots(station_results: dict, norm_params: dict, output_dir: str):
     """
-    Emulator vs SWAN 산점도 (Hs, Tm) + Buoy vs SWAN 산점도 (참고용).
+    Emulator-vs-SWAN scatter plots (Hs, Tm) + Buoy-vs-SWAN scatter plots (for reference).
     """
     os.makedirs(output_dir, exist_ok=True)
-    # 모으기
+    # Aggregate
     hs_p, hs_t, hs_m = [], [], []
     tm_p, tm_t, tm_m = [], [], []
     for d in station_results.values():
@@ -315,7 +320,7 @@ def create_scatter_plots(station_results: dict, norm_params: dict, output_dir: s
     plt.tight_layout()
     _savefig_vector(os.path.join(output_dir, "scatter_emulator_vs_swan.png"))
 
-    # Buoy vs SWAN (참고)
+    # Buoy vs SWAN (reference)
     plt.figure(figsize=(12,5))
     ax1 = plt.subplot(1,2,1); _scatter_ax(ax1, hs_t, hs_m, "Hs: Buoy vs SWAN", "SWAN (m)", "Buoy (m)")
     ax2 = plt.subplot(1,2,2); _scatter_ax(ax2, tm_t, tm_m, "Tm: Buoy vs SWAN", "SWAN (s)", "Buoy (s)")
@@ -327,21 +332,21 @@ def create_error_distribution_plots(
     norm_params: dict,
     output_dir: str,
     *,
-    center_on_median: bool = True,   # ← 중간값을 x축 중앙에 배치
-    show_median_line: bool = True    # ← 중앙값 수직선 표시
+    center_on_median: bool = True,   # <- place the median at the centre of the x axis
+    show_median_line: bool = True    # <- show a vertical line at the median
 ):
     """
-    |error| CDF (Hs, Tm) 와 Dir의 원형 절댓값 오차 CDF.
-    옵션:
-      - center_on_median=True  : 각 패널의 x축을 median을 중심으로 좌우 대칭 배치
-      - show_median_line=True  : median 위치에 수직선 + 숫자 표시
+    |error| CDF for Hs and Tm, and circular absolute-error CDF for Dir.
+    Options:
+      - center_on_median=True  : place each panel's x axis symmetrically around the median
+      - show_median_line=True  : draw a vertical line at the median and label its value
     """
     os.makedirs(output_dir, exist_ok=True)
 
-    # 수집
+    # Collect
     hs_e, tm_e, dr_e = [], [], []
     for d in station_results.values():
-        # Hs/Tm: 정규화→물리단위로 복원 후 |error|
+        # Hs/Tm: denormalize to physical units, then |error|
         ph = denorm(np.asarray(d["hs"]["pred"], float), *norm_params["hs"])
         th = denorm(np.asarray(d["hs"]["true"], float), *norm_params["hs"])
         pt = denorm(np.asarray(d["tm"]["pred"], float), *norm_params["tm"])
@@ -349,7 +354,7 @@ def create_error_distribution_plots(
         hs_e.append(np.abs(ph - th))
         tm_e.append(np.abs(pt - tt))
 
-        # Dir (원형 |오차|)
+        # Dir (circular |error|)
         pd = np.asarray(d["dir"]["pred"], float) % 360.0
         td = np.asarray(d["dir"]["true"], float) % 360.0
         diff = np.abs(((pd - td + 180.0) % 360.0) - 180.0)
@@ -382,7 +387,7 @@ def create_error_distribution_plots(
         ax.set_ylabel("CDF", fontsize=FONT_SIZES["label"])
         ax.tick_params(labelsize=FONT_SIZES["tick"])
 
-        # 중앙값 라인 + x축 중앙 정렬(옵션)
+        # Median line + centred x axis (optional)
         if show_median_line or center_on_median:
             med = float(np.nanmedian(a))
             if show_median_line:
@@ -395,9 +400,9 @@ def create_error_distribution_plots(
             if center_on_median:
                 xmin = float(np.nanmin(a))
                 xmax = float(np.nanmax(a))
-                # median을 정확히 중앙에 두도록 반경을 좌/우 중 큰 쪽으로 설정
+                # Set the radius to the larger of the left/right half-widths so the median sits exactly in the centre
                 r = max(med - xmin, xmax - med)
-                # 음수 x도 허용(데이터는 없지만 '시각적으로 중앙'을 맞추기 위함)
+                # Allow negative x (no data there, but useful for visual centering)
                 ax.set_xlim(med - r, med + r)
 
     plt.figure(figsize=(12, 4))
@@ -409,7 +414,7 @@ def create_error_distribution_plots(
 
 def create_circular_scatter_plots(station_results: dict, norm_params: dict, output_dir: str, max_points: int = 20000):
     """
-    Dir: true vs pred 산점도(도수 wrap). 점수가 많으면 서브샘플.
+    Dir: true-vs-pred scatter (degree wrap). Sub-sample if there are too many points.
     """
     os.makedirs(output_dir, exist_ok=True)
     pd_all, td_all = [], []
@@ -433,7 +438,7 @@ def create_circular_scatter_plots(station_results: dict, norm_params: dict, outp
     ax.set_ylabel("Emulator Dir (deg)", fontsize=FONT_SIZES["label"])
     ax.set_title("Direction: Emulator vs SWAN", fontsize=FONT_SIZES["title"])
     ax.tick_params(labelsize=FONT_SIZES["tick"])
-    # 간단 통계(원형 RMSE)
+    # Quick statistics (circular RMSE)
     diff = ((pd_all - td_all + 180.0) % 360.0) - 180.0
     crmse = np.sqrt(np.mean(diff**2)) if diff.size else np.nan
     ax.text(0.02,0.98,f"cRMSE={crmse:.2f}°",transform=ax.transAxes,ha="left",va="top",
@@ -479,7 +484,7 @@ def create_enhanced_journal_figures(metric_results: dict, station_results: dict,
     create_circular_scatter_plots(station_results, norm_params, output_dir)
 
 def create_cdf_error_plots(station_results: dict, norm_params: dict, output_dir: str):
-    # median을 중앙에 두고, 수직선도 표시
+    # Centre the median and draw a vertical line
     return create_error_distribution_plots(
         station_results, norm_params, output_dir,
         center_on_median=True, show_median_line=True
@@ -487,10 +492,10 @@ def create_cdf_error_plots(station_results: dict, norm_params: dict, output_dir:
 
 def compute_station_skill_tables(station_results: dict, norm_params: dict):
     """
-    Buoy(meas) 기준 스킬 테이블
-    - Hs & Tm: SWAN(true) vs Buoy, Emulator(pred) vs Buoy 둘 다 출력
-    - Dir: (원형) SWAN(true) vs Buoy, Emulator(pred_corrected) vs Buoy 둘 다 출력
-    반환: df_htm( Hs+Tm ), df_dir( Dir )
+    Skill table relative to buoy (measured) values
+    - Hs & Tm: report both SWAN(true) vs Buoy and Emulator(pred) vs Buoy
+    - Dir: (circular) report both SWAN(true) vs Buoy and Emulator(pred_corrected) vs Buoy
+    Returns: df_htm (Hs + Tm), df_dir (Dir)
     """
     def _stats_linear(pred, obs):
         m = np.isfinite(pred) & np.isfinite(obs)
@@ -543,7 +548,7 @@ def compute_station_skill_tables(station_results: dict, norm_params: dict):
             'Tm_MAE_Emul': mae_tm_emul, 'Tm_Bias_Emul': bias_tm_emul,
         })
 
-        # ---------- Dir (원형) ----------
+        # ---------- Dir (circular) ----------
         pd0 = np.asarray(d['dir'].get('pred_corrected', d['dir']['pred']), float) % 360.0
         td0 = np.asarray(d['dir']['true'], float) % 360.0
         md0 = np.asarray(d['dir']['meas'], float) % 360.0
@@ -666,7 +671,7 @@ def build_overall_metrics_dataframe(metric_results: dict) -> pd.DataFrame:
         "R^2":        _nanmean(metric_results.get("r2_tm", [])),
         "MAPE (%)":   _nanmean(metric_results.get("mape_tm", [])),
         "sMAPE (%)":  _nanmean(metric_results.get("smape_tm", [])),
-        "Area-weighted mean": np.nan,  # 표 규칙상 Hs만 표기
+        "Area-weighted mean": np.nan,  # Table convention: only Hs reported
     }
     dr = {
         "RMSE":       _nanmean(metric_results.get("rmse_dir", [])),
@@ -697,7 +702,7 @@ def save_overall_metrics_csv_and_latex(metric_results: dict, output_dir: str):
     print(f"[OVERALL] saved: {csv_path}, {tex_path}")
 
 # ----------------------------
-# Station meta (영문 이름 유지)
+# Station metadata (preserve English names)
 # ----------------------------
 STATIONS = {
     "Korea Strait":{"lat":34.933888,"lon":129.1375,"file":"daehanhaehyup_kg_wave_1h.csv"},
@@ -710,6 +715,8 @@ STATIONS = {
     "Saengil Island":{"lat":34.258716,"lon":126.960269,"file":"saengil_sig_wave_1H.csv"},
     "Sangwangdeungdo":{"lat":35.652458,"lon":126.194255,"file":"sangwang_sig_wave_1H.csv"},
 }
+# Mapping from Korean station names (as stored in KHOA CSV files) to their English equivalents.
+# Korean keys are required because the source CSV files use Korean station identifiers.
 STATION_EN = {"대한해협":"Korea Strait","제주해협":"Jeju Strait","남해동부":"South Sea East","대천해수욕장":"Daecheon Beach",
               "해운대해수욕장":"Haeundae Beach","임랑해수욕장":"Imrang Beach","중문해수욕장":"Jungmun Beach",
               "생일도":"Saengil Island","상왕등도":"Sangwangdeungdo"}
@@ -740,7 +747,7 @@ def merge_seg_series_dicts(*dicts):
     return out
 
 def _auto_align_bnd_dir(bnd_feat, ds_sim, kcs2d, time_index):
-    """경계 파향(sin, cos) 축을 타깃(sim dir)에 맞춰 0/±90/180 중 최적 회전 선택."""
+    """Select the best rotation among 0, +-90, 180 for the boundary direction (sin, cos) to match the target (sim dir)."""
     T = bnd_feat.shape[0]
     if 'dir' not in ds_sim:
         return 0.0, {}
@@ -784,10 +791,10 @@ def _auto_align_bnd_dir(bnd_feat, ds_sim, kcs2d, time_index):
 
 def _apply_dir_transform(arr_deg: np.ndarray, *, flip_sign=False, add_deg=0.0, swap_from_toward=False):
     """
-    arr_deg: [deg], '북-시계(Bearing, 0°=North, CW+)'로 들어온다고 가정한 각도에 대해
-    - flip_sign=True  → 반시계로 뒤집기( a → -a )
-    - add_deg=...,    → ±90 / ±180 보정
-    - swap_from_toward=True → from↔toward 전환 (+180)
+    arr_deg: [deg], assumes input angle is in 'north-clockwise bearing' (0 deg = North, CW positive)
+    - flip_sign=True  -> flip to counter-clockwise (a -> -a)
+    - add_deg=...    -> add a +-90 / +-180 correction
+    - swap_from_toward=True -> switch from <-> toward (+180)
     """
     a = np.asarray(arr_deg, dtype=float)
     if swap_from_toward:
@@ -799,7 +806,7 @@ def _apply_dir_transform(arr_deg: np.ndarray, *, flip_sign=False, add_deg=0.0, s
 
 def decide_and_apply_best_buoy_dir_transform(station_ts_dict: dict, *, save_dir: str = None):
     """
-    부이 Dir을 전역적으로 하나의 변환(set)으로 보정해 'meas_best'에 저장
+    Globally correct buoy Dir with a single transformation set and store as 'meas_best'
     """
     meas_all, true_all = [], []
     for d in station_ts_dict.values():
@@ -848,7 +855,7 @@ def decide_and_apply_best_buoy_dir_transform(station_ts_dict: dict, *, save_dir:
             f.write(f"BEST: {best_key}  (global cRMSE={best['rmse']:.3f} deg)\n")
     return best_key, results_sorted
 
-# 연도별 BND 폴더 매핑 (필요시 본인 경로에 맞게 수정)
+# Per-year BND folder mapping (edit to match your own paths if needed)
 BND_DIRS_BY_YEAR = {
     2019: r"C:\Users\User\PycharmProjects\CUDA_emulator_LSTM_UNET\SWAN_BND_FILES\bnd_2019",
     2020: r"C:\Users\User\PycharmProjects\CUDA_emulator_LSTM_UNET\SWAN_BND_FILES\bnd_2020",
@@ -938,7 +945,7 @@ def compute_params_with_indices(
     depth_q: tuple = (0.0, 100.0)
 ):
     if idx_train is None or len(idx_train) == 0:
-        raise ValueError("compute_params_with_indices: idx_train이 비어 있습니다.")
+        raise ValueError("compute_params_with_indices: idx_train is empty.")
     t_idx = np.asarray(idx_train, dtype=int) + int(seq_length)
 
     def _valid_t_idx(da: xr.DataArray, t_idx_arr):
@@ -949,7 +956,7 @@ def compute_params_with_indices(
 
     def _sel_values(varname: str):
         if varname not in ds:
-            raise KeyError(f"'{varname}' 변수를 NetCDF에서 찾을 수 없습니다.")
+            raise KeyError(f"Variable '{varname}' not found in NetCDF.")
         da = ds[varname]
         t_valid = _valid_t_idx(da, t_idx)
         if t_valid is None:
@@ -1085,14 +1092,14 @@ def load_and_preprocess_data(ds, global_norm_params, time_steps=100):
     _DTYPE = np.float32
     T = time_steps
 
-    # 기본 필드 정규화
+    # Normalize basic fields
     wind_u = normalize_with_external_params(ds['windu'].values[:T], global_norm_params['wind_u']).astype(_DTYPE)
     wind_v = normalize_with_external_params(ds['windv'].values[:T], global_norm_params['wind_v']).astype(_DTYPE)
     depth   = normalize_with_external_params(ds['depth'].values[:T],  global_norm_params['depth']).astype(_DTYPE)
     veloc_x = normalize_with_external_params(ds['veloc-x'].values[:T], global_norm_params['veloc_x']).astype(_DTYPE)
     veloc_y = normalize_with_external_params(ds['veloc-y'].values[:T], global_norm_params['veloc_y']).astype(_DTYPE)
 
-    # 목표 필드 정규화
+    # Normalize target fields
     hs  = normalize_with_external_params(ds['hsign'].values[:T], global_norm_params['hs']).astype(_DTYPE)
     tm  = normalize_with_external_params(ds['period'].values[:T], global_norm_params['tm']).astype(_DTYPE)
     rad = np.deg2rad(ds['dir'].values[:T])
@@ -1102,7 +1109,7 @@ def load_and_preprocess_data(ds, global_norm_params, time_steps=100):
     if lat.ndim == 3: lat = lat[0]
     if kcs.ndim == 3: kcs = kcs[0]
 
-    # depth gradient (정적 1채널)
+    # depth gradient (1 static channel)
     depth2d = ds['depth'].values if ds['depth'].values.ndim == 2 else ds['depth'].values[0]
     depth_grad = _depth_grad_mag(depth2d)  # (Y,X)
 
@@ -1472,7 +1479,7 @@ def evaluate_and_visualize(
     import pandas as pd
     import matplotlib.pyplot as plt
 
-    # --- 내부: Dir 샘플 지도 (0–360 고정) ------------------------------------
+    # --- Internal: Dir sample map (fixed 0-360) -----------------------------
     def _plot_dir_sample(pdir_deg, tdir_deg, lon, lat, kcs, fname):
         os.makedirs(os.path.dirname(fname), exist_ok=True)
         pdir = np.mod(pdir_deg, 360.0)
@@ -1495,24 +1502,24 @@ def evaluate_and_visualize(
         plt.tight_layout()
         _savefig_vector(fname)
 
-    # --- 출력 폴더 ---------------------------------------------------------
+    # --- Output folder -----------------------------------------------------
     out_dir = create_output_directory(pth_filename, tag=run_tag)
     print(f"[eval] outputs → {out_dir}")
 
-    # --- 공간 가중치 (cos(lat)) -------------------------------------------
+    # --- Spatial weights (cos(lat)) ---------------------------------------
     lat2d = lat_map if lat_map.ndim == 2 else lat_map[0]
     kcs2d = kcs_map if kcs_map.ndim == 2 else kcs_map[0]
     cos_lat = np.cos(np.deg2rad(lat2d)).astype(np.float32)
     cos_lat[(kcs2d <= 0) | ~np.isfinite(cos_lat)] = 0.0
     spatial_w = cos_lat / (cos_lat.sum() + 1e-12)
 
-    # --- 스테이션 격자 인덱스 ---------------------------------------------
+    # --- Station grid indices ---------------------------------------------
     st_indices = {}
     for name, meta in station_meta.items():
         i, j = find_nearest_index(lon_map, lat_map, kcs_map, meta["lon"], meta["lat"])
         st_indices[name] = (i, j)
 
-    # --- 메트릭 누적 컨테이너 ---------------------------------------------
+    # --- Metric-accumulator containers ------------------------------------
     metric_results = {k: [] for k in [
         "rmse_hs", "mae_hs", "bias_hs", "cc_hs", "r2_hs", "acc_hs", "mape_hs", "smape_hs",
         "rmse_tm", "mae_tm", "bias_tm", "cc_tm", "r2_tm", "mape_tm", "smape_tm",
@@ -1525,13 +1532,13 @@ def evaluate_and_visualize(
     hs_min, hs_max = global_norm_params['hs']
     tm_min, tm_max = global_norm_params['tm']
 
-    # --- Spatial RMSE 누적 버퍼 -------------------------------------------
+    # --- Spatial-RMSE accumulation buffers --------------------------------
     H, W = (kcs2d).shape
     hs_se = np.zeros((H, W), dtype=np.float64); hs_n = np.zeros((H, W), dtype=np.int32)
     tm_se = np.zeros((H, W), dtype=np.float64); tm_n = np.zeros((H, W), dtype=np.int32)
     dir_se = np.zeros((H, W), dtype=np.float64); dir_n = np.zeros((H, W), dtype=np.int32)
 
-    # --- 평가 루프 ---------------------------------------------------------
+    # --- Evaluation loop --------------------------------------------------
     model.eval()
     save_cnt = 0
     seen = 0
@@ -1546,13 +1553,13 @@ def evaluate_and_visualize(
 
             B = pred.size(0)
             for b in range(B):
-                # 시간 인덱스 복원
+                # Recover time index
                 if base_indices is not None:
                     test_t = int(base_indices[seen + b]) + int(seq_length)
                 else:
                     test_t = (bidx * loader.batch_size + b) + int(test_start_idx or 0) + int(seq_length)
 
-                # 예측/정답 (정규화 → 물리량 복원)
+                # Predictions / targets (denormalize to physical units)
                 phs = pred[b, 0].detach().cpu().numpy()
                 ptm = pred[b, 1].detach().cpu().numpy()
                 psin = pred[b, 2].detach().cpu().numpy()
@@ -1570,7 +1577,7 @@ def evaluate_and_visualize(
                 ptm_s = denorm(ptm, tm_min, tm_max)
                 ttm_s = denorm(ttm, tm_min, tm_max)
 
-                # --- 공간 메트릭(스칼라, 면적가중 포함)
+                # --- Spatial metrics (scalar, with area weighting)
                 oce_hs  = (kcs2d > 0) & np.isfinite(ths_m) & np.isfinite(phs_m)
                 oce_tm  = (kcs2d > 0) & np.isfinite(ttm_s) & np.isfinite(ptm_s)
                 oce_dir = (kcs2d > 0) & np.isfinite(tdir)  & np.isfinite(pdir)
@@ -1632,7 +1639,7 @@ def evaluate_and_visualize(
                     for k, v in dict(rmse_dir=rmse_dir, mae_dir=mae_dir, bias_dir=bias_dir, cc_dir=cc_dir, r2_dir=r2_dir).items():
                         metric_results[k].append(v)
 
-                # --- Spatial RMSE 누적 (per-grid)
+                # --- Spatial RMSE accumulation (per grid)
                 if np.any(oce_hs):
                     e = (phs_m - ths_m)**2
                     mask = oce_hs
@@ -1647,7 +1654,7 @@ def evaluate_and_visualize(
                     mask = oce_dir
                     dir_se[mask] += e[mask]; dir_n[mask] += 1
 
-                # --- 스테이션 시계열 적재 (정규화 스페이스)
+                # --- Load station time series (in normalized space)
                 for st_name, (i, j) in st_indices.items():
                     if 0 <= test_t < len(station_data[st_name]):
                         meas_hs, meas_tm, meas_dir = station_data[st_name][test_t]
@@ -1665,7 +1672,7 @@ def evaluate_and_visualize(
                     st_ts[st_name]['dir']['true'].append(tdir[i, j] % 360.0)
                     st_ts[st_name]['dir']['meas'].append(meas_dir % 360.0 if np.isfinite(meas_dir) else np.nan)
 
-                # --- 샘플 플롯 저장 (첫 몇 장)
+                # --- Save sample plots (first few panels)
                 if save_cnt < save_limit:
                     _plot_spatial_sample(phs_m, ths_m, lon_map, lat_map, kcs_map,
                                          fname=os.path.join(out_dir, f"{window_prefix}{out_prefix}_spatial_hs_{save_cnt}.png"),
@@ -1679,7 +1686,7 @@ def evaluate_and_visualize(
 
             seen += B
 
-    # --- 요약 스칼라 (평균) ------------------------------------------------
+    # --- Summary scalars (means) ------------------------------------------
     def _nanmean_local(lst): return float(np.nanmean(lst)) if len(lst) else np.nan
     out = {
         'rmse_hs': _nanmean_local(metric_results['rmse_hs']),
@@ -1694,7 +1701,7 @@ def evaluate_and_visualize(
         'out_dir': out_dir,
     }
 
-    # --- Spatial RMSE map 계산 및 저장 ------------------------------------
+    # --- Compute and save Spatial RMSE maps -------------------------------
     def _safe_rmse(se, n):
         rmse = np.full_like(se, np.nan, dtype=np.float64)
         m = n > 0
@@ -1711,7 +1718,7 @@ def evaluate_and_visualize(
         os.path.join(out_dir, f"{window_prefix}{out_prefix}_spatial_rmse_maps.png")
     )
 
-    # 숫자 요약(면적가중 평균/백분위) + NetCDF 저장 시도
+    # Numeric summary (area-weighted mean/percentile) + attempt NetCDF save
     valid_hs  = (kcs2d > 0) & np.isfinite(rmse_hs_map)
     valid_tm  = (kcs2d > 0) & np.isfinite(rmse_tm_map)
     valid_dir = (kcs2d > 0) & np.isfinite(rmse_dir_map)
@@ -1845,15 +1852,15 @@ def evaluate_and_visualize(
     return out
 
 # =========================================================
-# 3/3 — CSV/LaTeX 저장 유틸 + main()
-#   - save_overall_metrics_csv_and_latex(): SWAN 대비 전체 성능표 저장
-#   - MAPE_THRESH: 0에 가까운 값 배제 임계치(과도한 % 폭주 방지)
-#   - main(): 평가 실행 + 파일 경로 로그
+# 3/3 -- CSV/LaTeX save utilities + main()
+#   - save_overall_metrics_csv_and_latex(): save the overall performance table relative to SWAN
+#   - MAPE_THRESH: threshold for excluding near-zero denominators (prevents % blow-up)
+#   - main(): run the evaluation and log file paths
 # =========================================================
 
-# MAPE가 비정상적으로 커지는 것을 막기 위한 물리단위 임계치
-#  - Hs: 0.25 m 미만 구간은 MAPE 계산에서 제외 (관측치가 너무 작아 %가 폭주)
-#  - Tm: 1.0 s 미만 구간 제외 (짧은 주기는 분모가 너무 작아짐)
+# Physical-unit thresholds to prevent MAPE from blowing up
+#  - Hs: exclude bins below 0.25 m from MAPE (denominator too small -> % blows up)
+#  - Tm: exclude bins below 1.0 s (short periods give too-small denominators)
 MAPE_THRESH = {
     "hs": 0.25,
     "tm": 1.0,
@@ -1866,8 +1873,8 @@ def _fmt(x, nd=3):
 
 def save_overall_metrics_csv_and_latex(metric_results: dict, output_dir: str):
     """
-    Emulator vs SWAN의 '전체' 성능 요약을 CSV + LaTeX 테이블로 저장.
-    metric_results는 evaluate_and_visualize()에서 step별/타일별 평균들을 누적한 컨테이너.
+    Save the overall Emulator-vs-SWAN performance summary as CSV and a LaTeX table.
+    metric_results is the container accumulating per-step and per-tile averages from evaluate_and_visualize().
     """
     os.makedirs(output_dir, exist_ok=True)
 
@@ -1876,7 +1883,7 @@ def save_overall_metrics_csv_and_latex(metric_results: dict, output_dir: str):
         arr = arr[np.isfinite(arr)]
         return float(arr.mean()) if arr.size else np.nan
 
-    # --- 집계 ---
+    # --- Aggregation ---
     hs = {
         "rmse": _agg("rmse_hs"),
         "mae":  _agg("mae_hs"),
@@ -1922,7 +1929,7 @@ def save_overall_metrics_csv_and_latex(metric_results: dict, output_dir: str):
     csv_path = os.path.join(output_dir, "overall_metrics_vs_swan.csv")
     df.to_csv(csv_path, index=False)
 
-    # --- LaTeX (논문 표 스타일) ---
+    # --- LaTeX (paper table style) ---
     tex_path = os.path.join(output_dir, "aggregated_metrics.tex")
     with open(tex_path, "w", encoding="utf-8") as f:
         f.write(r"\begin{table}[htbp]"+"\n")
@@ -2109,7 +2116,7 @@ def main():
     else:
         print(f"[BND] Skipped (use_bnd={use_bnd}, current_in={in_ch}, expected_in={expected_in})")
 
-    # dataset은 더 이상 필요 없으므로 해제
+    # Release the dataset; no longer needed
     ds.close()
 
     # ---- dataset/loader (TEST ONLY via holdout indices) ----

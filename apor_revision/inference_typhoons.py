@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 """
 UNet-ConvLSTM wave emulator — INFERENCE ONLY (Windowed stacking ver.)
-- 메모리 절약형: 시간축 전체를 한 번에 메모리에 적재하지 않음
-- 모든 전처리/스택 생성을 '윈도우(구간)' 단위로 수행
-- BND(경계 특징)도 윈도우 길이에 맞춰서 그때그때 생성/결합
-- 태풍 구간 평가, 일반 평가, 속도 벤치마크 모두 윈도우 방식
+- Memory-efficient: does not load the full time axis into memory at once
+- All preprocessing and stack construction is done per 'window' (chunk)
+- BND (boundary features) are also built and merged on a per-window basis
+- Typhoon-window evaluation, general evaluation, and speed benchmarking all use the window approach
 
-★ 이 버전은 태풍 인퍼런스에서 BND 방향 회전각을 '항상 -90°'로 고정합니다.
+* This version FIXES the BND direction rotation angle to -90 deg for typhoon inference.
 """
 
 import os, re, argparse, warnings, datetime, time
@@ -25,7 +25,7 @@ from scipy.ndimage import distance_transform_edt
 from pathlib import Path
 import matplotlib.dates as mdates
 
-# -- [NEW] Cartopy (optional, 시각화용)
+# -- [NEW] Cartopy (optional, for visualization)
 try:
     import cartopy.crs as ccrs
     import cartopy.feature as cfeature
@@ -34,17 +34,17 @@ except Exception:
     _HAVE_CARTOPY = False
 
 # ----------------------------
-# Fonts (Times New Roman 강제)
+# Fonts (force Times New Roman)
 # ----------------------------
 def _set_global_font():
-    # Arial을 최우선으로 시도, 한글/기호 폴백 포함
+    # Try Arial first, with Korean-glyph / symbol fallback
     matplotlib.rcParams.update({
         "font.family": ["Arial", "Arial Unicode MS", "Noto Sans CJK KR",
                         "Malgun Gothic", "AppleGothic", "DejaVu Sans"],
-        "axes.unicode_minus": False,  # 마이너스 기호 깨짐 방지
-        "pdf.fonttype": 42,           # TrueType 임베딩 → AI 편집 용이
+        "axes.unicode_minus": False,  # prevent minus-sign rendering issues
+        "pdf.fonttype": 42,           # TrueType embedding -> easier to edit in vector editors
         "ps.fonttype": 42,
-        # 기본 폰트 크기 소폭 상향
+        # Slightly increase default font size
         "axes.titlesize": 18,
         "axes.labelsize": 16,
         "xtick.labelsize": 14,
@@ -60,7 +60,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"[INFO] Using device: {device}")
 
 # ----------------------------
-# Station meta (영문 이름 유지)
+# Station metadata (preserve English names)
 # ----------------------------
 STATIONS = {
     "Korea Strait":{"lat":34.933888,"lon":129.1375,"file":"daehanhaehyup_kg_wave_1h.csv"},
@@ -73,6 +73,8 @@ STATIONS = {
     "Saengil Island":{"lat":34.258716,"lon":126.960269,"file":"saengil_sig_wave_1H.csv"},
     "Sangwangdeungdo":{"lat":35.652458,"lon":126.194255,"file":"sangwang_sig_wave_1H.csv"},
 }
+# Mapping from Korean station names (as stored in KHOA CSV files) to their English equivalents.
+# Korean keys are required because the source CSV files use Korean station identifiers.
 STATION_EN = {"대한해협":"Korea Strait","제주해협":"Jeju Strait","남해동부":"South Sea East","대천해수욕장":"Daecheon Beach",
               "해운대해수욕장":"Haeundae Beach","임랑해수욕장":"Imrang Beach","중문해수욕장":"Jungmun Beach",
               "생일도":"Saengil Island","상왕등도":"Sangwangdeungdo"}
@@ -190,7 +192,7 @@ def _obs_agreement_metrics(model_phys, obs_phys):
 
 
 def _depth_grad_mag(depth2d):
-    """depth 경사 크기 → 0~1 정규화"""
+    """Normalize the magnitude of the depth gradient to [0, 1]."""
     if depth2d.ndim == 3: depth2d = depth2d[0]
     gy, gx = np.gradient(np.nan_to_num(depth2d.astype(np.float32)))
     g = np.hypot(gx, gy)
@@ -198,7 +200,7 @@ def _depth_grad_mag(depth2d):
     return np.clip((g - lo) / max(hi - lo, 1e-6), 0, 1).astype(np.float32)
 
 # =========================================================
-# BND features (same as train) — 윈도우 길이만큼만 생성/결합
+# BND features (same as train) -- built per-window
 # =========================================================
 def merge_seg_series_dicts(*dicts):
     out = {}
@@ -212,7 +214,7 @@ def merge_seg_series_dicts(*dicts):
         out[name] = df
     return out
 
-# BND 파일 경로(연도별)
+# BND file paths (per year)
 BND_DIRS_BY_YEAR = {
     2019: r"C:\Users\User\PycharmProjects\CUDA_emulator_LSTM_UNET\SWAN_BND_FILES\bnd_2019",
     2020: r"C:\Users\User\PycharmProjects\CUDA_emulator_LSTM_UNET\SWAN_BND_FILES\bnd_2020",
@@ -221,10 +223,10 @@ BND_DIRECTION = "from"  # or "toward"
 
 def build_bnd_features(ds_sim, kcs, time_index, global_norm_params, *, force_rotation_deg: float | None = None):
     """
-    반환값: bnd_feat (T, 4, H, W)  [채널: Hs_norm, Tm_norm, sin, cos]
-    필요한 로컬 모듈: bnd_features.py, boundspec_segments.py
+    Returns: bnd_feat (T, 4, H, W)  [channels: Hs_norm, Tm_norm, sin, cos]
+    Required local modules: bnd_features.py, boundspec_segments.py
 
-    ★ force_rotation_deg 가 주어지면, 자동 정렬을 '무시'하고 해당 각도로 sin/cos를 회전합니다.
+    * If force_rotation_deg is given, automatic alignment is BYPASSED and sin/cos are rotated by that angle.
     """
     try:
         from bnd_features import (
@@ -232,7 +234,7 @@ def build_bnd_features(ds_sim, kcs, time_index, global_norm_params, *, force_rot
         )
         from boundspec_segments import SEGMENTS, M as SWAN_M, N as SWAN_N
     except Exception as e:
-        raise RuntimeError(f"[BND] 모듈 불러오기 실패: {type(e).__name__}: {e}")
+        raise RuntimeError(f"[BND] Failed to load module: {type(e).__name__}: {e}")
 
     kcs2d = kcs[0] if kcs.ndim == 3 else kcs
     H, W = kcs2d.shape
@@ -251,9 +253,9 @@ def build_bnd_features(ds_sim, kcs, time_index, global_norm_params, *, force_rot
         if bdir and os.path.isdir(bdir):
             seg_y = read_all_bnds(Path(bdir), direction=BND_DIRECTION)
             seg_dicts.append(seg_y)
-            print(f"[BND] {y}: {bdir} 로딩 완료")
+            print(f"[BND] {y}: loaded from {bdir}")
         else:
-            raise RuntimeError(f"[BND] {y}년 BND 폴더가 없거나 경로가 올바르지 않습니다: {bdir}")
+            raise RuntimeError(f"[BND] {y}: BND folder is missing or the path is invalid: {bdir}")
 
     seg_series = merge_seg_series_dicts(*seg_dicts)
 
@@ -272,25 +274,25 @@ def build_bnd_features(ds_sim, kcs, time_index, global_norm_params, *, force_rot
         norm_tm=global_norm_params['tm'],
     )  # (T, 4, H, W)
 
-    # --- sin/cos 회전 유틸
+    # --- sin/cos rotation utility
     def _rotate(sin_arr, cos_arr, deg):
         r = np.deg2rad(deg)
         sin_r = sin_arr*np.cos(r) + cos_arr*np.sin(r)
         cos_r = cos_arr*np.cos(r) - sin_arr*np.sin(r)
         return sin_r.astype(np.float32), cos_r.astype(np.float32)
 
-    # --- 채널 인덱스 (Hs, Tm, sin, cos)
+    # --- channel indices (Hs, Tm, sin, cos)
     sin_idx, cos_idx = 2, 3
 
-    # ★ 1) 강제 회전이 지정되면 그것을 '항상 적용'
+    # * 1) If a forced rotation is specified, ALWAYS apply it
     if force_rotation_deg is not None:
         bnd_feat[:, sin_idx], bnd_feat[:, cos_idx] = _rotate(bnd_feat[:, sin_idx], bnd_feat[:, cos_idx], force_rotation_deg)
         print(f"[BND] force rotation applied: {force_rotation_deg:+.0f}° (auto-align skipped)")
         return bnd_feat.astype(np.float32)
 
-    # 2) 아니면 자동 정렬(이전 동작)
+    # 2) Otherwise use automatic alignment (previous behaviour)
     try:
-        # 자동 정렬: sim 'dir' 과 best match (0/±90/180)
+        # Automatic alignment: best match against sim 'dir' (0 / +-90 / 180)
         if 'dir' in ds_sim:
             T = bnd_feat.shape[0]
             rad = np.deg2rad(ds_sim['dir'].values[:T])
@@ -308,7 +310,7 @@ def build_bnd_features(ds_sim, kcs, time_index, global_norm_params, *, force_rot
             msg = " ".join([f"{k:+.0f}°:{v:.4f}" for k, v in sorted(scores.items())])
             print(f"[BND] dir autocorrect → chosen {best_deg:+.0f}° | scores {msg}")
     except Exception as e:
-        print(f"[BND] dir autocorrect 건너뜀: {type(e).__name__}: {e}")
+        print(f"[BND] dir autocorrect skipped: {type(e).__name__}: {e}")
 
     return bnd_feat.astype(np.float32)
 
@@ -329,7 +331,7 @@ def compute_params_with_indices(
     depth_q: tuple = (0.0, 100.0)
 ):
     if idx_train is None or len(idx_train) == 0:
-        raise ValueError("compute_params_with_indices: idx_train이 비어 있습니다.")
+        raise ValueError("compute_params_with_indices: idx_train is empty.")
     t_idx = np.asarray(idx_train, dtype=int) + int(seq_length)
 
     def _valid_t_idx(da: xr.DataArray, t_idx_arr):
@@ -340,7 +342,7 @@ def compute_params_with_indices(
 
     def _sel_values(varname: str):
         if varname not in ds:
-            raise KeyError(f"'{varname}' 변수를 NetCDF에서 찾을 수 없습니다.")
+            raise KeyError(f"Variable '{varname}' not found in NetCDF.")
         da = ds[varname]
         t_valid = _valid_t_idx(da, t_idx)
         if t_valid is None: arr = da.values
@@ -411,14 +413,14 @@ def load_and_preprocess_window(ds_window: xr.Dataset, global_norm_params: dict) 
     if T is None or T <= 0:
         raise ValueError("[window] empty time window")
 
-    # 입력 6채널(정규화)
+    # Input 6 channels (normalized)
     wind_u = normalize_with_external_params(ds_window['windu'].values, global_norm_params['wind_u']).astype(_DTYPE)
     wind_v = normalize_with_external_params(ds_window['windv'].values, global_norm_params['wind_v']).astype(_DTYPE)
     depth   = normalize_with_external_params(ds_window['depth'].values,  global_norm_params['depth']).astype(_DTYPE)
     veloc_x = normalize_with_external_params(ds_window['veloc-x'].values, global_norm_params['veloc_x']).astype(_DTYPE)
     veloc_y = normalize_with_external_params(ds_window['veloc-y'].values, global_norm_params['veloc_y']).astype(_DTYPE)
 
-    # 타깃 4채널(정규화/변환)
+    # Target 4 channels (normalized/transformed)
     hs  = normalize_with_external_params(ds_window['hsign'].values, global_norm_params['hs']).astype(_DTYPE)
     tm  = normalize_with_external_params(ds_window['period'].values, global_norm_params['tm']).astype(_DTYPE)
     rad = np.deg2rad(ds_window['dir'].values)
@@ -548,6 +550,9 @@ def find_nearest_index(lon_map, lat_map, kcs_map, target_lon, target_lat):
     return valid[0][j], valid[1][j]
 
 def load_all_station_data(root_dir, norm_params, time_index):
+    # Candidate column-name lists used to locate fields in KHOA buoy CSV files.
+    # Korean keywords: '유의파고' = significant wave height (Hs), '유의파주기' / '파주기' = wave period (Tm),
+    # '파향' = wave direction, '관측시간' = observation time.
     col_hs = ['유의파고(MOSE.HF)(m)','유의파고(m)','Hs(m)','HS','hs']
     col_tm = ['유의파주기(MOSE.HF)(sec)','유의파주기(sec)','Tm(sec)','TP','tm']
     col_dir = ['파향(deg)','Dir(deg)','파향','dir']; col_time = ['관측시간','datetime','time','date','DateTime','DATE']
@@ -645,7 +650,7 @@ def _draw_field_on_ax(ax, data, lon_map, lat_map, kcs_map, cmap='viridis', vmin=
     if title: ax.set_title(title)
     return im
 
-# --- Dir 샘플 플롯 (0–360° 고정 + HSV)
+# --- Dir sample plots (fixed 0-360 deg + HSV)
 def _plot_dir_sample(pdir_deg, tdir_deg, lon, lat, kcs, fname):
     os.makedirs(os.path.dirname(fname), exist_ok=True)
     pdir = np.mod(pdir_deg, 360.0).astype(float)
@@ -775,7 +780,7 @@ def evaluate_window(
     window_prefix: str = "win",
     save_limit: int = 3,
     use_bnd: bool = True,
-    force_bnd_rotation_deg: float | None = None,   # ★ 추가: BND 방향 고정각
+    force_bnd_rotation_deg: float | None = None,   # * Added: fixed BND direction angle
 ):
     # 1) Preprocess only this window
     input_win, wave_win, lon, lat, kcs = load_and_preprocess_window(ds_win, global_norm_params)
@@ -785,7 +790,7 @@ def evaluate_window(
         try:
             bnd_feat = build_bnd_features(
                 ds_win, kcs, pd.to_datetime(ds_win['time'].values).tz_localize(None),
-                global_norm_params, force_rotation_deg=force_bnd_rotation_deg  # ★ -90° 고정 전달
+                global_norm_params, force_rotation_deg=force_bnd_rotation_deg  # * pass the fixed -90 deg through
             )
             if bnd_feat.shape[0] != input_win.shape[0]:
                 Tuse = min(bnd_feat.shape[0], input_win.shape[0])
@@ -793,7 +798,7 @@ def evaluate_window(
             input_win = np.concatenate([input_win, bnd_feat], axis=1)
             print(f"[BND] window appended → input channels = {input_win.shape[1]}")
         except Exception as e:
-            warnings.warn(f"[BND] window 실패({type(e).__name__}: {e}) → 6채널 사용")
+            warnings.warn(f"[BND] window failed ({type(e).__name__}: {e}) -> using 6 channels")
             use_bnd = False
 
     # 3) Dataset/Loader for this window
@@ -913,7 +918,7 @@ def evaluate_window(
                     _plot_spatial_sample(pred_tm_phys, true_tm_phys, lon, lat, kcs,
                                          os.path.join(out_dir, f"{window_prefix}_spatial_tm_{save_cnt}.png"),
                                          var_name="Tm", title_suffix=f" (step {bidx*loader.batch_size + b})", norm_params=None)
-                    # ★ Dir 샘플은 HSV/0–360° 고정
+                    # * Dir samples use HSV with fixed 0-360 deg
                     _plot_dir_sample(pred_dir_phys, true_dir_phys, lon, lat, kcs,
                                      os.path.join(out_dir, f"{window_prefix}_spatial_dir_{save_cnt}.png"))
                     save_cnt += 1
@@ -1064,14 +1069,14 @@ def run_typhoon_windows(
     typhoon_dict: dict = TYPHOONS,
     save_limit: int = 3,
     use_bnd: bool = True,
-    force_bnd_rotation_deg: float | None = -90.0,   # ★ 기본 -90° 고정
+    force_bnd_rotation_deg: float | None = -90.0,   # * default -90 deg fixed
 ):
     results = []
     peak_rows = []
     obs_rows = []
     for name, info in typhoon_dict.items():
         print(f"[TY] Processing {name} ...")
-        # 윈도우 계산
+        # Window computation
         def _window_indices(time_index: pd.DatetimeIndex, start_utc: pd.Timestamp, end_utc: pd.Timestamp, seq_len: int):
             start_utc = pd.Timestamp(start_utc).tz_localize(None)
             end_utc   = pd.Timestamp(end_utc).tz_localize(None)
@@ -1085,7 +1090,7 @@ def run_typhoon_windows(
             model=model, ds_win=ds_win, time_index_full=time_index, global_norm_params=global_norm_params,
             seq_length=seq_length, batch_size=batch_size, station_data_full=station_data,
             out_model_path=out_model_path, window_prefix=info['prefix'], save_limit=save_limit,
-            use_bnd=use_bnd, force_bnd_rotation_deg=force_bnd_rotation_deg  # ★ -90° 전달
+            use_bnd=use_bnd, force_bnd_rotation_deg=force_bnd_rotation_deg  # * pass -90 deg through
         )
         if summ is None:
             results.append({"Typhoon": name.capitalize(), "RMSE (m)": np.nan, "MAE (m)": np.nan, "r": np.nan,
@@ -1161,7 +1166,7 @@ def run_speed_benchmark(
             input_win = np.concatenate([input_win, bnd_feat], axis=1)
             print(f"[SPD] BND on (C={input_win.shape[1]})")
         except Exception as e:
-            warnings.warn(f"[SPD] BND 실패({type(e).__name__}: {e}) → 6채널 사용")
+            warnings.warn(f"[SPD] BND failed ({type(e).__name__}: {e}) -> using 6 channels")
             use_bnd = False
 
     T = input_win.shape[0]
@@ -1247,9 +1252,9 @@ def _autofill_paths(args):
         args.model_path = _find_latest_file(["*.pth", "*.pt", "*.ckpt"], search_dirs)
         if args.model_path: print(f"[AUTO] Using model_path={args.model_path}")
     if not args.data_path or not os.path.isfile(args.data_path):
-        raise FileNotFoundError("[AUTO] NetCDF(.nc) 파일을 찾지 못했습니다. --data_path 지정 필요")
+        raise FileNotFoundError("[AUTO] No NetCDF (.nc) file found. Please specify --data_path.")
     if not args.model_path or not os.path.isfile(args.model_path):
-        raise FileNotFoundError("[AUTO] 모델 가중치(.pth/.pt/.ckpt)를 찾지 못했습니다. --model_path 지정 필요")
+        raise FileNotFoundError("[AUTO] No model checkpoint (.pth/.pt/.ckpt) found. Please specify --model_path.")
 
 def main():
     parser = argparse.ArgumentParser(description="UNet-ConvLSTM Inference (Windowed stacking ver.; Typhoon BND=-90° fixed)")
@@ -1263,7 +1268,7 @@ def main():
     parser.add_argument('--hidden_dim', type=int, default=128)
     parser.add_argument('--feat', type=str, default='32,64,128,256,512')
 
-    # BND switch + ★ 강제 회전 각도
+    # BND switch + * forced rotation angle
     parser.add_argument('--bnd', dest='bnd', action='store_true', help='Enable BND boundary features (default ON)')
     parser.add_argument('--no-bnd', dest='bnd', action='store_false', help='Disable BND (use 6ch)')
     parser.set_defaults(bnd=True)
@@ -1317,7 +1322,7 @@ def main():
     missing, unexpected = model.load_state_dict(state, strict=False)
     print(f"[load_state_dict] missing={len(missing)}, unexpected={len(unexpected)}")
 
-    # speed benchmark (선택)
+    # speed benchmark (optional)
     if args.speed_benchmark:
         run_speed_benchmark(
             model=model, ds_sim=ds_sim, seq_length=args.seq_length, batch_size=args.batch_size,
@@ -1326,7 +1331,7 @@ def main():
             bench_hours=args.bench_hours, use_bnd=args.bnd, force_bnd_rotation_deg=args.bnd_force_deg
         )
 
-    # typhoon windows (★ 여기서 -90°를 기본 고정)
+    # typhoon windows (* default -90 deg fixed here)
     if args.typhoon_table:
         lon = ds_sim.get('x', xr.DataArray()).values if 'x' in ds_sim else None
         lat = ds_sim.get('y', xr.DataArray()).values if 'y' in ds_sim else None

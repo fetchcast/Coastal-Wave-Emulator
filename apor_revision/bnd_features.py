@@ -8,7 +8,7 @@ from scipy.ndimage import distance_transform_edt
 import wavespectra as ws
 
 # ──────────────────────────────────────────────────────────────
-# 1) .bnd 읽어서 시간별 Hs, Tm01, mean dir(sin, cos)로 요약
+# 1) Read .bnd files and summarize per-time Hs, Tm01, mean direction (sin, cos)
 # ──────────────────────────────────────────────────────────────
 def _tm01_numint(efth: np.ndarray, freq: np.ndarray, dtheta_rad: np.ndarray):
     """Tm01 = m0/m1, m0=∫∫E df dθ, m1=∫∫ fE df dθ   (efth: (T,F,D))"""
@@ -20,7 +20,7 @@ def _tm01_numint(efth: np.ndarray, freq: np.ndarray, dtheta_rad: np.ndarray):
     return m0, tm01
 
 def _mean_dir_sincos(efth: np.ndarray, dirs_deg: np.ndarray, freq: np.ndarray, dtheta_rad: np.ndarray):
-    """스펙트럼 평균방향: atan2(∫∫E sinθ df dθ, ∫∫E cosθ df dθ) → sin, cos"""
+    """Spectral mean direction: atan2(integral E*sin(theta) df dtheta, integral E*cos(theta) df dtheta) -> sin, cos"""
     df = np.gradient(freq)                # (F,)
     theta = np.deg2rad(dirs_deg)          # (D,)
     s = np.sin(theta)[None, None, :]      # (1,1,D)
@@ -33,11 +33,11 @@ def _mean_dir_sincos(efth: np.ndarray, dirs_deg: np.ndarray, freq: np.ndarray, d
 
 def read_bnd_to_series(bnd_path: Path, direction: str = "from") -> pd.DataFrame:
     """
-    SWAN .bnd 한 개 파일을 읽어 시간별 요약 반환:
+    Read a single SWAN .bnd file and return per-time summary:
       columns = ['hs','tm','sin','cos']  (index = time UTC)
     direction:
-      - "from"  : 파일이 '오는 방향(nautical-from)'이면 그대로 사용
-      - "toward": '가는 방향(toward)'이면 +180° 회전해서 'from'으로 변환
+      - "from"  : file is already in 'coming-from direction' (nautical-from); use as-is
+      - "toward": file is in 'going-toward direction'; rotate by +180 deg to convert to 'from'
     """
     spec = ws.read_swan(str(bnd_path))             # efth(time,freq,dir[,(site)])
     da = spec.efth if hasattr(spec, "efth") else spec["efth"]
@@ -55,7 +55,7 @@ def read_bnd_to_series(bnd_path: Path, direction: str = "from") -> pd.DataFrame:
     sdir, cdir = _mean_dir_sincos(efth, dirs, freq, dtheta_rad)
 
     if direction.lower() == "toward":
-        # toward → from (평균각 +180°)
+        # toward -> from (rotate mean angle by +180 deg)
         sdir = -sdir
         cdir = -cdir
 
@@ -64,8 +64,9 @@ def read_bnd_to_series(bnd_path: Path, direction: str = "from") -> pd.DataFrame:
 
 def read_all_bnds(bnd_dir: Path, direction: str = "from") -> Dict[str, pd.DataFrame]:
     """
-    디렉토리 내 *.bnd 전부 읽어 dict 반환.
-    키 = 파일명(확장자 제외, 대문자), 값 = read_bnd_to_series 결과
+    Read all *.bnd files in a directory and return as dict.
+    keys = filename (without extension, uppercased)
+    values = result of read_bnd_to_series
     """
     out = {}
     files = sorted(Path(bnd_dir).glob("*.bnd"))
@@ -77,10 +78,10 @@ def read_all_bnds(bnd_dir: Path, direction: str = "from") -> Dict[str, pd.DataFr
     return out
 
 # ──────────────────────────────────────────────────────────────
-# 2) BOUNDSPEC SEGMENT → 경계 라벨맵(owner_label) 만들기 (절대 인덱스)
+# 2) Build boundary label map (owner_label) from BOUNDSPEC SEGMENTs (absolute indices)
 # ──────────────────────────────────────────────────────────────
 def segment_pixels(i1: int, j1: int, i2: int, j2: int) -> List[Tuple[int, int]]:
-    """정수 좌표 보간(수평/수직 세그먼트만 지원). SWAN: I=x(열, n), J=y(행, m)"""
+    """Integer-coordinate interpolation (horizontal/vertical segments only). SWAN: I=x(col, n), J=y(row, m)"""
     pts = []
     if i1 == i2:  # vertical
         i = i1
@@ -95,13 +96,13 @@ def segment_pixels(i1: int, j1: int, i2: int, j2: int) -> List[Tuple[int, int]]:
     return pts
 
 def assert_on_edges(segments: Dict[str, Tuple[Tuple[int,int], Tuple[int,int]]], M: int, N: int):
-    """세그먼트 끝점이 실제 외곽 경계 위에 있는지 검사(실수 방지용)."""
+    """Check that segment endpoints lie on the actual outer boundary (sanity check)."""
     for name, ((i1, j1), (i2, j2)) in segments.items():
         for (i, j) in [(i1, j1), (i2, j2)]:
             ok = (i in (0, N-1)) or (j in (0, M-1))
             if not ok:
-                raise ValueError(f"{name}: (I,J)=({i},{j})가 외곽 경계가 아닙니다. "
-                                 f"허용: I∈{{0,{N-1}}} 또는 J∈{{0,{M-1}}}")
+                raise ValueError(f"{name}: (I,J)=({i},{j}) is not on the outer boundary. "
+                                 f"Allowed: I in {{0,{N-1}}} or J in {{0,{M-1}}}")
 
 def build_owner_label(
     H: int, W: int,
@@ -111,23 +112,23 @@ def build_owner_label(
     swap_ij: bool = False
 ) -> Tuple[np.ndarray, Dict[int, str]]:
     """
-    반환:
-      owner_label: (H,W) int 배열 (0=비할당/육지, 1..K=세그먼트 라벨)
-      id2name: {라벨번호: 세그먼트이름}
+    Returns:
+      owner_label: (H,W) int array (0=unassigned/land, 1..K=segment label)
+      id2name: {label_id: segment_name}
 
-    절대 인덱스 모드(무스케일):
-      - 기본(미전치):   (H,W)==(exact_M, exact_N), 맵핑 m=J, n=I
-      - 전치(swap_ij): (H,W)==(exact_N, exact_M), 맵핑 m=I, n=J
+    Absolute-index mode (no scaling):
+      - default (no transpose):  (H,W)==(exact_M, exact_N), mapping m=J, n=I
+      - transposed (swap_ij):    (H,W)==(exact_N, exact_M), mapping m=I, n=J
     """
     if not swap_ij:
         if (H != exact_M) or (W != exact_N):
             raise ValueError(
-                f"Grid mismatch: data(H,W)=({H},{W}) != SWAN(M,N)=({exact_M},{exact_N}). 자동 스케일링은 금지되어 있습니다."
+                f"Grid mismatch: data(H,W)=({H},{W}) != SWAN(M,N)=({exact_M},{exact_N}). Automatic scaling is disabled."
             )
     else:
         if (H != exact_N) or (W != exact_M):
             raise ValueError(
-                f"Grid mismatch (transposed expected): data(H,W)=({H},{W}) != (N,M)=({exact_N},{exact_M}). 자동 스케일링은 금지되어 있습니다."
+                f"Grid mismatch (transposed expected): data(H,W)=({H},{W}) != (N,M)=({exact_N},{exact_M}). Automatic scaling is disabled."
             )
 
     owner = np.zeros((H, W), dtype=np.int32)
@@ -140,31 +141,31 @@ def build_owner_label(
         pts = segment_pixels(i1, j1, i2, j2)
         for (ii, jj) in pts:
             if not swap_ij:
-                n, m = ii, jj  # 기본: n=I, m=J
+                n, m = ii, jj  # default: n=I, m=J
             else:
-                n, m = jj, ii  # 전치: n=J, m=I
+                n, m = jj, ii  # transposed: n=J, m=I
             if not (0 <= n < W and 0 <= m < H):
                 raise ValueError(
-                    f"{name}: (mapped m,n)=({m},{n})가 범위를 벗어납니다. "
-                    f"유효범위 n∈[0,{W-1}], m∈[0,{H-1}]"
+                    f"{name}: (mapped m,n)=({m},{n}) is out of range. "
+                    f"Valid range: n in [0,{W-1}], m in [0,{H-1}]"
                 )
             owner[m, n] = k
 
-    # 최근접 세그먼트 보로노이 분할(내해 픽셀에 가장 가까운 경계 세그먼트 라벨 전파)
+    # Nearest-segment Voronoi assignment (propagate the nearest boundary-segment label to each interior pixel)
     seed_mask = owner > 0
     if not seed_mask.any():
         raise RuntimeError("No boundary seeds painted; check segments and sizes.")
     _, (iy, ix) = distance_transform_edt(~seed_mask, return_indices=True)
     nearest = owner[iy, ix]
 
-    # 육지(kcs<=0)면 0으로 남기기
+    # Keep land pixels (kcs<=0) labeled as 0
     if kcs is not None:
         nearest = np.where((kcs > 0), nearest, 0)
 
     return nearest.astype(np.int32), id2name
 
 # ──────────────────────────────────────────────────────────────
-# 3) 시간×4채널 경계 맵 만들기
+# 3) Build per-time 4-channel boundary feature map
 # ──────────────────────────────────────────────────────────────
 def make_boundary_feature_maps(
     time_index: pd.DatetimeIndex,
@@ -176,7 +177,7 @@ def make_boundary_feature_maps(
     norm_tm: Tuple[float, float]
 ) -> np.ndarray:
     """
-    반환: feat  (T, 4, H, W)  = Hs_bnd, Tm_bnd, sin_bnd, cos_bnd  (hs, tm은 정규화 완료)
+    Returns: feat  (T, 4, H, W)  = Hs_bnd, Tm_bnd, sin_bnd, cos_bnd  (hs and tm are already normalized)
     """
     H, W = owner_label.shape
     K = max(id2name.keys())
@@ -184,13 +185,13 @@ def make_boundary_feature_maps(
     def _align(df: pd.DataFrame) -> pd.DataFrame:
         s = df.reindex(time_index)
 
-        # 시간 인덱스면 time 보간, 아니면 기본 보간
+        # If the index is time-based, use time interpolation; otherwise use default interpolation
         if isinstance(s.index, pd.DatetimeIndex):
             s = s.interpolate(method="time", limit_direction="both")
         else:
             s = s.interpolate(limit_direction="both")
 
-        # deprecated: fillna(method="...")  →  대체: .bfill() / .ffill()
+        # deprecated: fillna(method="...")  ->  use .bfill() / .ffill() instead
         s = s.bfill().ffill()
         return s.fillna(0.0)
 
