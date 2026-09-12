@@ -2014,6 +2014,29 @@ def benchmark_model(model_name: str, job: Dict[str, Any], device: torch.device) 
     )
 
 
+def git_state(repo_dir: Optional[Path] = None) -> Dict[str, Any]:
+    """Commit hash and dirty flag of the repository holding this file.
+
+    Returns {"git_commit": "<sha>" | "unknown", "git_dirty": bool | None}.
+    "unknown"/None are used when git is unavailable or the directory is not a
+    repository, so the manifest is always written.
+    """
+    cwd = str((repo_dir or Path(__file__).resolve().parent))
+    out: Dict[str, Any] = {"git_commit": "unknown", "git_dirty": None}
+    try:
+        rev = subprocess.run(["git", "rev-parse", "HEAD"], cwd=cwd, capture_output=True,
+                             text=True, timeout=10)
+        if rev.returncode == 0 and rev.stdout.strip():
+            out["git_commit"] = rev.stdout.strip()
+            st = subprocess.run(["git", "status", "--porcelain"], cwd=cwd, capture_output=True,
+                                text=True, timeout=10)
+            if st.returncode == 0:
+                out["git_dirty"] = bool(st.stdout.strip())
+    except Exception:
+        pass
+    return out
+
+
 def write_json(path: Path, payload: Dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
@@ -2553,6 +2576,7 @@ def worker_main(job_file: str) -> int:
                 "resolved_data_path": str(Path(CONFIG["data_path"]).resolve()),
                 "resolved_legacy_train_script": str(Path(CONFIG["legacy_train_script"]).resolve()),
                 "ddp_world_size": world_size,
+                **git_state(),
             }
             write_json(run_dir / "run_manifest.json", manifest)
 
