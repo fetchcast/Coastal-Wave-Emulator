@@ -1,36 +1,41 @@
 # TASKS — GitHub setup for the SWAN emulator benchmark
 
-## Status (2026-09-12, done in the `fetchcast/Coastal-Wave-Emulator` clone)
+## Status (2026-09-12)
 
-The tasks below were written for the training server
-(`/home/jovyan/swan`). Part of them were carried out directly in this
-repository, which already holds the APOR code; the rest need the server
-file system and are listed as remaining.
+The tasks below were written for the training server (`/home/jovyan/swan`).
+They were carried out in the `fetchcast/Coastal-Wave-Emulator` repository
+from a code bundle exported from the server; the server file system was
+inspected through that bundle (timestamps, hashes, diffs).
 
-Done here:
+Done:
 
-- Task 1 (adapted): `.gitignore` added; `V2.0.0/` renamed back to
-  `apor_revision/`; `CITATION.cff` extension restored; placeholder files
-  removed; `CLAUDE.md`, `TASKS.md`, `docs/VERSIONS.md` committed.
-- Task 2 (partial): `main` is the APOR version; annotated tag `v1.0-apor`
-  created on the cleaned-up `main` state.
-- Task 5 (partial): README updated with the version table, corrigendum
-  notice, data availability, and links to `docs/`. `docs/CORRIGENDUM.md`
-  is held back until the `[verify]` values in the draft are confirmed
-  against the journal text.
-
-Remaining (server, or after the v2 code is uploaded here):
-
-- Task 0: locate the pre-edit v2 `train.py`; record the outcome in
+- Task 0: resolved. The pre-edit v2 `train.py` was never overwritten (the
+  two-block edit lives in `swan_repaired_v1/train_repaired.py`). Recorded in
   `docs/VERSIONS.md`.
-- Task 1: commit the v2 code files on the `v2-benchmark` branch.
-- Task 2: tag `v2.0-run-20260904` and, at the FNO/TNO re-run, `v2.1`.
-- Task 3: `git_commit` / `git_dirty` in `run_manifest.json`.
-- Task 4: `tests/` (spectral blocks, split hook, autocorrect).
-- Task 5: benchmark usage section of the README on `v2-benchmark`;
-  `docs/CORRIGENDUM.md` on `main` after verification.
-- Task 6: push `main`, `v2-benchmark`, and tags; enable Zenodo.
+- Task 1: `.gitignore`; `V2.0.0/` renamed back to `apor_revision/`;
+  `CITATION.cff` extension restored; placeholder files removed; the seven
+  code files plus `archive/` committed on `v2-benchmark`.
+- Task 2: `main` = APOR code, tag `v1.0-apor`; `v2-benchmark` branched from
+  it; tag `v2.0-run-20260904` on the imported server code. `v2.1` is not
+  tagged: the FNO/TNO re-run has not been launched.
+- Task 3: `git_commit` and `git_dirty` in `run_manifest.json`.
+- Task 4: `tests/` (spectral blocks, split hook, autocorrect, manifest);
+  `pytest -q tests` passes (26 tests) on CPU without data.
+- Task 5: README (benchmark usage on `v2-benchmark`), `docs/VERSIONS.md`.
+  `docs/CORRIGENDUM.md` is held back until the `[verify]` values in the
+  draft are confirmed against the journal text.
+- Task 6: `main`, `v2-benchmark`, and both tags pushed to
+  `fetchcast/Coastal-Wave-Emulator`.
+
+Remaining:
+
+- Task 2: tag `v2.1` when the FNO/TNO re-run starts from the committed
+  `train.py`. Pull the branch onto the server first so that the run uses
+  the committed file and the manifest records the hash.
+- Task 5: `docs/CORRIGENDUM.md` on `main` after verification.
+- Task 6: enable the Zenodo-GitHub integration (browser step).
 - Task 7: separate `oe-buoy-validation` repository.
+- Decision: scope of `swan_repaired_v1` (see `docs/VERSIONS.md`).
 
 ---
 

@@ -13,7 +13,7 @@ on this repository, and they live on different branches:
 | Paper | Branch | Tag | Hindcast | Boundary | Direction transform | Status |
 |---|---|---|---|---|---|---|
 | APOR 2026 (UNet++-ConvLSTM emulator) | `main` | `v1.0-apor` | v1 | segments defined in `apor_revision/boundspec_segments.py` (W01-W10, S01-S09, E03-E10; no northern boundary); misaligned against the ERA5 extraction points | rotation -90 deg | published; corrigendum in preparation |
-| EM&S benchmark (10 architectures) | `v2-benchmark` | `v2.x` | v2 | 37 segments, complete | reflection 270 - theta | in preparation; code to be imported from the training server |
+| EM&S benchmark (10 architectures) | `v2-benchmark` | `v2.x` | v2 | 37 segments, complete | reflection 270 - theta | in preparation |
 
 `main` carries the code that accompanies the published APOR paper: the legacy
 demo (`main.py`, `src/swan_emul/`) and the revision package
@@ -22,10 +22,9 @@ demo (`main.py`, `src/swan_emul/`) and the revision package
 `docs/CORRIGENDUM.md` and version bookkeeping in `docs/VERSIONS.md`.
 
 The v2 benchmark code (`train.py`, the legacy training script, evaluation and
-follow-up tools) is developed on the training server and enters this
-repository on the `v2-benchmark` branch. Until it is imported, tasks that
-need it (run-manifest hash, unit tests, `v2.0-run-20260904` tag) cannot be
-completed here.
+follow-up tools) lives on the `v2-benchmark` branch. It is developed on the
+training server; commit and tag here before a run, then pull the branch on
+the server so that `run_manifest.json` records the commit hash.
 
 ## Hard rules
 
@@ -84,18 +83,21 @@ docs/CORRIGENDUM.md                       v1 defects and v2 corrections (added w
 CLAUDE.md, TASKS.md                       standing rules and the task list
 ```
 
-`v2-benchmark` (EM&S, tags `v2.x`), once imported from the server:
+`v2-benchmark` (EM&S, tags `v2.x`), in addition to everything on `main`:
 
 ```
 train.py                                  launcher + worker (CONFIG dict at top)
 UNET_LSTM_V64_..._9input.py               legacy training script (benchmark)
 UNET_LSTM_V64_..._9input_followup.py      patched copy for follow-up (generated, committed)
+UNET_LSTM_V64_..._9input_followup.sha256.json   hashes of the original and the copy
 benchmark_inference_full_fixed.py         unified evaluation + figures
 bnd_leakage_report.py                     boundary corruption test
 patch_train_fraction.py                   builds the follow-up legacy copy
 followup_launcher.py                      R/D/L/B follow-up experiments (isolated root)
 bench_epoch_report.py                     completed epochs / early stop / updates per run
-tests/                                    unit tests (spectral conv blocks, split hook, autocorrect)
+tests/                                    unit tests (spectral conv blocks, split hook, autocorrect, manifest)
+archive/                                  v1-config launcher and pre-reflection legacy script (provenance only)
+swan_repaired_v1/                         server package with the spectral fix and a proposed protocol change (see docs/VERSIONS.md)
 ```
 
 ## Style for anything written into manuscripts
