@@ -68,7 +68,12 @@ Coastal-Wave-Emulator/
 ├── maysak_hs.gif                   ← example typhoon animation
 ├── requirements.txt                ← legacy demo requirements
 │
-└── apor_revision/                  ← revised-paper reproduction (NEW)
+├── docs/
+│   ├── VERSIONS.md                 ← paper → branch → tag → data mapping
+│   └── CORRIGENDUM.md              ← v1 hindcast defects (added when the journal text is final)
+├── CLAUDE.md, TASKS.md             ← repository rules and task list
+│
+└── apor_revision/                  ← revised-paper reproduction
     ├── README_revision.md
     ├── requirements.txt
     ├── CITATION.cff
@@ -174,6 +179,35 @@ python run_all_inference.py
 ```
 
 ---
+
+## Versions, branches, and data
+
+Two papers depend on this repository and they live on different branches.
+`docs/VERSIONS.md` records each tag with its hindcast version, boundary
+definition, direction transform, and evaluation policy.
+
+| Paper | Branch | Tag | Hindcast | Status |
+|---|---|---|---|---|
+| Applied Ocean Research 2026 (UNet++–ConvLSTM emulator) | `main` | `v1.0-apor` | v1 | published; corrigendum in preparation |
+| Ten-architecture benchmark (in preparation) | `v2-benchmark` | `v2.x` | v2 | code to be added |
+
+The code under `v1.0-apor` is frozen so that the published result stays
+reproducible. Later work on `main` is limited to documentation.
+
+**Corrigendum.** The SWAN hindcast behind the published paper carried
+defects in its open-boundary forcing (segment placement, missing northern
+boundary, transposed boundary feature map). A corrigendum is in
+preparation for the journal. Its content will be mirrored in `docs/CORRIGENDUM.md`, with
+the journal DOI, once the text is final. The emulator results in the paper
+describe how well the network reproduces that hindcast; the hindcast itself
+is superseded by the v2 hindcast used on the `v2-benchmark` branch.
+
+**Data availability.** The two-year hindcast (`wavm-Waves_2019_2020_final.nc`)
+and the boundary spectra are not in this repository. They are archived on
+Zenodo; see the data-availability statement of the paper for the DOI. Only
+the 10-step sample under `data/` and the small inference checkpoints are
+tracked here. Training runs, checkpoints, and result tables are excluded by
+`.gitignore`.
 
 ## License
 

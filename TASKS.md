@@ -1,0 +1,185 @@
+# TASKS — GitHub setup for the SWAN emulator benchmark
+
+## Status (2026-09-12, done in the `fetchcast/Coastal-Wave-Emulator` clone)
+
+The tasks below were written for the training server
+(`/home/jovyan/swan`). Part of them were carried out directly in this
+repository, which already holds the APOR code; the rest need the server
+file system and are listed as remaining.
+
+Done here:
+
+- Task 1 (adapted): `.gitignore` added; `V2.0.0/` renamed back to
+  `apor_revision/`; `CITATION.cff` extension restored; placeholder files
+  removed; `CLAUDE.md`, `TASKS.md`, `docs/VERSIONS.md` committed.
+- Task 2 (partial): `main` is the APOR version; annotated tag `v1.0-apor`
+  created on the cleaned-up `main` state.
+- Task 5 (partial): README updated with the version table, corrigendum
+  notice, data availability, and links to `docs/`. `docs/CORRIGENDUM.md`
+  is held back until the `[verify]` values in the draft are confirmed
+  against the journal text.
+
+Remaining (server, or after the v2 code is uploaded here):
+
+- Task 0: locate the pre-edit v2 `train.py`; record the outcome in
+  `docs/VERSIONS.md`.
+- Task 1: commit the v2 code files on the `v2-benchmark` branch.
+- Task 2: tag `v2.0-run-20260904` and, at the FNO/TNO re-run, `v2.1`.
+- Task 3: `git_commit` / `git_dirty` in `run_manifest.json`.
+- Task 4: `tests/` (spectral blocks, split hook, autocorrect).
+- Task 5: benchmark usage section of the README on `v2-benchmark`;
+  `docs/CORRIGENDUM.md` on `main` after verification.
+- Task 6: push `main`, `v2-benchmark`, and tags; enable Zenodo.
+- Task 7: separate `oe-buoy-validation` repository.
+
+---
+
+# Original task list (as supplied)
+
+Claude Code: work through these in order. Each task has an acceptance check.
+Stop and report if a check fails. Do not skip Task 0. Talk to the user in
+Korean; write everything committed in English.
+
+Working directory: `/home/jovyan/swan` (server). Remote: the user's GitHub
+account, repository name `swan-emulator-benchmark` (create it empty on GitHub
+if it does not exist; do not initialise it with a README there).
+
+---
+
+## Task 0 — Preserve the code that produced the current runs (do this first)
+
+The 209-job v2 run started 2026-09-04. FNO/TNO spectral convolutions were
+edited afterwards. The exact pre-edit v2 code must be recoverable.
+
+1. Look for any copy of the pre-edit v2 `train.py`: `train.py~`, `*.bak`,
+   `train_v1_backup.py` (that one is the v1-CONFIG version, not v2), editor
+   backups, or the version inside `runs/v2_focused_all/config_snapshot.json`
+   (that file holds CONFIG only, not code).
+2. If a pre-edit v2 copy exists, keep it as `archive/train_v2.0_single_block.py`
+   and note its origin in `docs/VERSIONS.md`.
+3. If none exists, write in `docs/VERSIONS.md` that the v2.0 FNO/TNO runs used a
+   single-block `SpectralConv2d`/`SpectralConv3d` (as described in
+   `CLAUDE.md`), that the source file was overwritten before it was committed,
+   and that those runs are superseded by the v2.1 re-run.
+
+Check: `docs/VERSIONS.md` exists and states one of the two outcomes.
+
+## Task 1 — Repository, .gitignore, snapshot of the current state
+
+```
+git init  (if needed)
+```
+Create `.gitignore`:
+```
+runs/
+logs/
+*.nc
+*.pth
+*.pt
+*.npy
+*.npz
+bnd_*/
+__pycache__/
+*.pyc
+*.log
+# results; whitelist small config CSVs explicitly if any are needed
+*.csv
+!station_meta.csv
+.venv/
+```
+Commit the current code files only (never `runs/`):
+`train.py`, the legacy script, `benchmark_inference_full_fixed.py`,
+`bnd_leakage_report.py`, `patch_train_fraction.py`, `followup_launcher.py`,
+`bench_epoch_report.py`, `CLAUDE.md`, `TASKS.md`.
+
+Check: `git status` shows no `runs/`, `*.nc`, `*.pth` staged;
+`git ls-files | wc -l` is small (< 30).
+
+## Task 2 — Branches and tags
+
+- `main` = the APOR published version. If the current working tree is already
+  v2, ask the user for the v1 code (they have `train_v1_backup.py` and the
+  pre-reflection legacy backup `*_before_reflection_patch.py` /
+  `*_v1_original.py`). Put v1 on `main`, tag `v1.0-apor`.
+- Branch `v2-benchmark` from `main` with the current v2 code; tag the state
+  that corresponds to the running 209 jobs as `v2.0-run-20260904`
+  (use the archive copy from Task 0 if the FNO/TNO edit is already in the tree,
+  otherwise the tree itself).
+- The FNO/TNO two-block fix and everything after it is `v2.1`; tag when the
+  re-run of FNO/TNO is launched.
+
+Check: `git tag` lists `v1.0-apor`, `v2.0-run-20260904`; `git log --oneline
+--graph --all` shows v2-benchmark branching from main.
+
+## Task 3 — Record the commit hash in every run manifest
+
+In `train.py`, where `run_manifest.json` is written (search `run_manifest`),
+add `"git_commit"`: output of `git rev-parse HEAD` (fall back to `"unknown"`
+if git is unavailable) and `"git_dirty"`: whether `git status --porcelain` is
+non-empty. Do not change anything else in that function.
+
+Check: a dry `python -c "import train"` succeeds; a unit test builds the
+manifest dict and finds both keys.
+
+## Task 4 — Unit tests (`tests/`)
+
+Use `pytest`. Tests must run on CPU without data.
+
+1. `test_spectral_blocks.py`: for `SpectralConv2d` and `SpectralConv3d`, pass
+   `cos(2*pi*(3x+4y))` and `cos(2*pi*(-3x+4y))` through the spectral path with
+   identity weights on the retained modes; both must reconstruct within 1e-4.
+   This is the regression test for the two-block fix.
+2. `test_split_hook.py`: extract `make_block_stratified_split` from the
+   follow-up legacy copy; assert (a) unset env and `1.0` give indices identical
+   to the original function, (b) `0.5` keeps val/test identical and a training
+   subset, (c) `0.25` is nested in `0.5`, (d) `0`, `-1`, `1.1`, `nan`, `abc`
+   raise `ValueError` from `robust_block_split` (no fallback).
+3. `test_autocorrect.py`: synthetic BND/dir fields with a different convention
+   in the "test" frames; train-only scoring must pick `refl+270`; forced
+   `SWAN_BND_DIR_TRANSFORM=refl+270` is applied; `bogus` raises.
+
+Check: `pytest -q tests` passes.
+
+## Task 5 — Documentation
+
+- `README.md`: purpose, the version table from `CLAUDE.md`, how to run the
+  benchmark (`python train.py`), the follow-up (`patch_train_fraction.py` then
+  `followup_launcher.py`), and evaluation; data availability statement
+  (hindcast on Zenodo, not in git); citation placeholders.
+- `docs/CORRIGENDUM.md`: from the draft supplied by the user (`CORRIGENDUM_draft.md`).
+  Link the journal corrigendum DOI when available.
+- `docs/VERSIONS.md`: from Task 0, plus a row per tag with date, hindcast
+  version, boundary description, direction transform, evaluation policy,
+  known issues.
+
+Check: all three files exist; README links to both docs.
+
+## Task 6 — Push and Zenodo
+
+1. Authentication (user does the browser step):
+   `ssh-keygen -t ed25519 -C "swan-server"` -> user adds the public key at
+   GitHub Settings > SSH and GPG keys -> `ssh -T git@github.com` succeeds.
+   Alternative: `gh auth login` if `gh` is installed.
+2. `git remote add origin git@github.com:<user>/swan-emulator-benchmark.git`
+3. `git push -u origin main v2-benchmark --tags`
+4. Tell the user to enable the Zenodo-GitHub integration for this repository
+   (zenodo.org > GitHub) so that each GitHub Release gets a DOI. Releases are
+   created at submission time, not now.
+
+Check: `git ls-remote origin` shows both branches and both tags.
+
+## Task 7 — Separate repository for the OE buoy paper (later)
+
+`oe-buoy-validation` with `integrated_loader.py`, `validate_pipeline_v2.py`,
+`make_paper_figures_v2.py`, `journal_style_v5.py`, `station_meta.csv`, and
+the manuscript. Raw buoy files stay out of git. This repository has its own
+`CLAUDE.md` (see `OE_PROJECT_BRIEF.md`). Do not mix it into this repository.
+
+---
+
+## Do not
+
+- Do not commit anything under `runs/`, even "small" summaries; the analysis
+  CSVs that the papers cite are archived on Zenodo with the release.
+- Do not touch `main` after `v1.0-apor` except to add `docs/CORRIGENDUM.md`.
+- Do not run or stop training jobs. Repository work only.

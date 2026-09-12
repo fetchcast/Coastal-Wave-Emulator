@@ -1,0 +1,26 @@
+# Data, checkpoints, results. Never commit these (hundreds of GB on the
+# training server). Files that were already tracked before this rule was
+# added (the small demo checkpoints under weights/ and apor_revision/weights/,
+# the two sample zips under data/) stay tracked; git ignores only untracked
+# paths.
+runs/
+logs/
+outputs/
+*.nc
+*.pth
+*.pt
+*.npy
+*.npz
+bnd_*/
+__pycache__/
+*.pyc
+*.log
+# Result tables; whitelist small config CSVs explicitly if any are needed.
+*.csv
+!station_meta.csv
+.venv/
+
+# Editor and OS clutter
+.DS_Store
+*~
+*.bak
