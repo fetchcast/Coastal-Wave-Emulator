@@ -361,30 +361,22 @@ class ConvLSTMCell(nn.Module):
 
 
 class SpectralConv2d(nn.Module):
-    def __init__(self, in_channels: int, out_channels: int, modes_x: int, modes_y: int) -> None:
+    def __init__(self,in_channels,out_channels,modes_x,modes_y):
         super().__init__()
-        scale = 1.0 / max(1, in_channels * out_channels)
-        self.modes_x = int(modes_x)
-        self.modes_y = int(modes_y)
-        self.out_channels = int(out_channels)
-        # Store as real-valued tensor (..., 2) to avoid NCCL all-reduce failures
-        # on complex dtypes during DDP gradient synchronisation.
-        self.weight = nn.Parameter(
-            scale * torch.randn(in_channels, out_channels, self.modes_x, self.modes_y, 2)
-        )
-
-    def _get_complex_weight(self) -> torch.Tensor:
-        return torch.view_as_complex(self.weight)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        batch, _, h, w = x.shape
-        x_ft = torch.fft.rfft2(x.float(), norm="ortho")
-        out_ft = torch.zeros(batch, self.out_channels, h, w // 2 + 1, dtype=torch.cfloat, device=x.device)
-        mx = min(self.modes_x, h)
-        my = min(self.modes_y, w // 2 + 1)
-        w_c = self._get_complex_weight()
-        out_ft[:, :, :mx, :my] = torch.einsum("bixy,ioxy->boxy", x_ft[:, :, :mx, :my], w_c[:, :, :mx, :my])
-        return torch.fft.irfft2(out_ft, s=(h, w), norm="ortho").to(x.dtype)
+        self.out_channels=out_channels; self.modes_x=int(modes_x); self.modes_y=int(modes_y)
+        scale=1./max(1,in_channels*out_channels)
+        shape=(in_channels,out_channels,self.modes_x,self.modes_y,2)
+        self.weight_pos=nn.Parameter(scale*torch.randn(*shape))
+        self.weight_neg=nn.Parameter(scale*torch.randn(*shape))
+    def forward(self,x):
+        b,_,h,w=x.shape
+        mx=min(self.modes_x,(h+1)//2); mn=min(self.modes_x,h//2); my=min(self.modes_y,w//2+1)
+        ft=torch.fft.rfft2(x.float(),norm='ortho')
+        out=torch.zeros(b,self.out_channels,h,w//2+1,dtype=torch.cfloat,device=x.device)
+        out[:,:,:mx,:my]=torch.einsum('bixy,ioxy->boxy',ft[:,:,:mx,:my],torch.view_as_complex(self.weight_pos)[:,:,:mx,:my])
+        if mn:
+            out[:,:,-mn:,:my]=torch.einsum('bixy,ioxy->boxy',ft[:,:,-mn:,:my],torch.view_as_complex(self.weight_neg)[:,:,:mn,:my])
+        return torch.fft.irfft2(out,s=(h,w),norm='ortho').to(x.dtype)
 
 
 class FactorizedSpectralConv2d(nn.Module):
@@ -421,30 +413,26 @@ class FactorizedSpectralConv2d(nn.Module):
 
 
 class SpectralConv3d(nn.Module):
-    def __init__(self, in_channels: int, out_channels: int, modes_t: int, modes_x: int, modes_y: int) -> None:
+    def __init__(self,in_channels,out_channels,modes_t,modes_x,modes_y):
         super().__init__()
-        scale = 1.0 / max(1, in_channels * out_channels)
-        self.out_channels = int(out_channels)
-        self.modes_t = int(modes_t)
-        self.modes_x = int(modes_x)
-        self.modes_y = int(modes_y)
-        # Store as real-valued (..., 2) for NCCL compatibility.
-        self.weight = nn.Parameter(
-            scale * torch.randn(in_channels, out_channels, self.modes_t, self.modes_x, self.modes_y, 2)
-        )
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        batch, _, t, h, w = x.shape
-        x_ft = torch.fft.rfftn(x.float(), dim=(-3, -2, -1), norm="ortho")
-        out_ft = torch.zeros(batch, self.out_channels, t, h, w // 2 + 1, dtype=torch.cfloat, device=x.device)
-        mt = min(self.modes_t, t)
-        mx = min(self.modes_x, h)
-        my = min(self.modes_y, w // 2 + 1)
-        w_c = torch.view_as_complex(self.weight)
-        out_ft[:, :, :mt, :mx, :my] = torch.einsum(
-            "bixyz,ioxyz->boxyz", x_ft[:, :, :mt, :mx, :my], w_c[:, :, :mt, :mx, :my]
-        )
-        return torch.fft.irfftn(out_ft, s=(t, h, w), dim=(-3, -2, -1), norm="ortho").to(x.dtype)
+        self.out_channels=out_channels; self.modes_t=int(modes_t); self.modes_x=int(modes_x); self.modes_y=int(modes_y)
+        shape=(in_channels,out_channels,self.modes_t,self.modes_x,self.modes_y,2)
+        scale=1./max(1,in_channels*out_channels)
+        self.weights=nn.ParameterList([nn.Parameter(scale*torch.randn(*shape)) for _ in range(4)])
+    def forward(self,x):
+        b,_,t,h,w=x.shape
+        ft=torch.fft.rfftn(x.float(),dim=(-3,-2,-1),norm='ortho')
+        out=torch.zeros(b,self.out_channels,t,h,w//2+1,dtype=torch.cfloat,device=x.device)
+        my=min(self.modes_y,w//2+1)
+        for i,(neg_t,neg_x) in enumerate([(False,False),(True,False),(False,True),(True,True)]):
+            mt=min(self.modes_t,t//2 if neg_t else (t+1)//2)
+            mx=min(self.modes_x,h//2 if neg_x else (h+1)//2)
+            if not mt or not mx: continue
+            ts=slice(-mt,None) if neg_t else slice(0,mt)
+            xs=slice(-mx,None) if neg_x else slice(0,mx)
+            out[:,:,ts,xs,:my]=torch.einsum('bixyz,ioxyz->boxyz',ft[:,:,ts,xs,:my],
+                torch.view_as_complex(self.weights[i])[:,:,:mt,:mx,:my])
+        return torch.fft.irfftn(out,s=(t,h,w),dim=(-3,-2,-1),norm='ortho').to(x.dtype)
 
 
 class FourierBlock(nn.Module):
