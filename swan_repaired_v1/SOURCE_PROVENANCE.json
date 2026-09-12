@@ -1,0 +1,7 @@
+{
+  "UNET_LSTM_V64_fixes_ds_loss_peaksampler_boundary_input_9input_270_autocorrect_v2.py": "8a36d585953df3d82987cc99d97fdb4fd8abffe0bcc27158a78ae2d9c0f4d174",
+  "train.py": "530182bdfe4586248cab71eb04af9c48971fdfe55f5cef9276e9e52a59bc17ce",
+  "patch_train_fraction(2).py": "0da7918c44e1b9362c73e3d247b4ed94d2eee47bee9e20faeeb739a189040423",
+  "followup_launcher(2).py": "4ace6f4c6ae845b4725f862550344f591edc825b1168086545f85840e2fa0849",
+  "bench_epoch_report.py": "4a1f14e04e842bd46ae7f2c1a4cd9fa60fc02af84d58c21b4525fad4df08dec6"
+}
