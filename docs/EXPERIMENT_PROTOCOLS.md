@@ -34,3 +34,11 @@ metric, seeds, evaluated time range/mask, metric units/aggregation, and plotting
 script hash. The supplied capacity plot states pilot anchors + A, seed 42 only,
 B/C excluded; verify its CSV and run manifests before assigning any Git commit.
 A source import date or package hash alone cannot prove the code of an older run.
+
+## Optional source v2.1.1 diagnostic utility
+
+`swan_resource_checks` adds event-array reuse, measured inference resources, and
+exploratory 2021 input-error sensitivity. Its own plan records all sources and
+sampling choices; the parent v2.1 model protocol remains unchanged. Optional
+short-schedule LR pilots are a separate exploratory cohort, not C repeats or
+full-budget baseline results. Neither diagnostics nor pilots use 2022.

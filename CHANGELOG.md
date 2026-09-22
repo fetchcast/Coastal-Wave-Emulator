@@ -2,6 +2,8 @@
 
 ## 2.1.1
 
+- Add isolated frozen-model resource/input-error diagnostics with idle-GPU scheduling and opt-in short LR pilots. Existing trainers and evaluation outputs remain unchanged.
+
 - Adopt coherent version labels and distinguish legacy package paths from releases.
 - Document experiment/protocol provenance and campaign CPU-test dependencies.
 - Wait for child-script readiness in the relative-wrapper process-detection test.

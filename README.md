@@ -1,3 +1,5 @@
+> **Optional resource checks:** [swan_resource_checks](swan_resource_checks/README.md) reuses frozen 2021 evaluations for event diagnostics, inference memory/latency and input-error sensitivity. Extra LR pilots are opt-in; 2022 is untouched.
+
 > **Source version: v2.1.1.** See [versions](docs/VERSIONS.md), [experiment–protocol mapping](docs/EXPERIMENT_PROTOCOLS.md), and [environment setup](docs/ENVIRONMENT.md). Legacy package names remain stable.
 
 > **September 2026 campaign update (`v2-benchmark`):** The frozen-budget campaign, per-family 2021 evaluation, and event diagnostics are now included. Start with [the campaign guide](docs/CAMPAIGN_20260922.md). Earlier workflows below remain for provenance; do not launch multiple controllers against the same run roots.
