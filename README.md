@@ -2,6 +2,8 @@
 
 # Coastal-Wave-Emulator
 
+Documentation defaults to English. Each campaign package has an English `README.md`; the preserved `README_KO.md` provides the Korean version. Start with the [package directory](docs/CAMPAIGN_20260922.md#which-package-to-use) or the [repaired training guide](swan_repaired_v1/README.md).
+
 Neural-network emulators of a Delft3D-FM / SWAN wave hindcast of Korean
 coastal waters (261 x 256 grid, 1.8 km, hourly, 2019-2020). Two papers depend
 on this repository and live on different branches.
