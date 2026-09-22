@@ -1,3 +1,5 @@
+> **Current source version: v2.1.1.** [Version policy](VERSIONS.md) and [experiment mapping](EXPERIMENT_PROTOCOLS.md) define the current protocol scope. Folder labels v3/v4/v41/v5 are retained compatibility aliases. Historical task/status statements below are not evidence of current server completion.
+
 # Cross-assistant handoff
 
 GPT and Claude can work on this repository through separate clients. Git commits and the working tree are the shared state; their conversation histories are not automatically shared.
@@ -31,3 +33,4 @@ git log -5 --oneline
 ```
 
 Do not run these checkout/pull commands over the active training source directory without first checking the running jobs and local modifications. Use a separate checkout for review when jobs are active.
+

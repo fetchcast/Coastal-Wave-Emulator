@@ -1,3 +1,5 @@
+> **Current source version: v2.1.1.** [Version policy](docs/VERSIONS.md) and [experiment mapping](docs/EXPERIMENT_PROTOCOLS.md) define the current protocol scope. Folder labels v3/v4/v41/v5 are retained compatibility aliases. Historical task/status statements below are not evidence of current server completion.
+
 # CLAUDE.md — Coastal-Wave-Emulator
 
 Repository for the SWAN coastal wave emulator and its benchmark (Korea
@@ -41,7 +43,11 @@ the server so that `run_manifest.json` records the commit hash.
 - Do not "improve" scientific text or numbers on your own initiative. Numbers in
   manuscripts come only from CSV files produced by the pipeline.
 
-## Facts that must not drift (verified from code)
+## Historical v2.0 recipe and shared spectral correctness rule
+
+The recipe-specific statements below describe legacy v2.0; repaired protocol
+differences are in `docs/EXPERIMENT_PROTOCOLS.md`. The spectral correctness
+requirement applies to all new runs.
 
 - Data split: block-stratified, `bh=168, q=5, emb=12` -> train/val/test
   9770/1980/1980 samples (75 training blocks). Sample index t targets raw time
@@ -63,7 +69,7 @@ the server so that `run_manifest.json` records the commit hash.
   runs made with it are superseded and must be labelled as such.
 - Direction loss clips sin/cos components and the dot product without
   normalising the predicted vector; this is a known limitation kept for
-  comparability within the v2 benchmark. Do not change it inside v2.x.
+  comparability within the v2 benchmark. Preserve this rule for legacy v2.0 reproductions; the repaired protocol is documented separately.
 - Config search included `modes_x != modes_y` (32x64). Always report both.
 - Stage-2 config selection uses `val_loss_final` (Kendall loss), not RMSE.
 
@@ -97,7 +103,7 @@ followup_launcher.py                      R/D/L/B follow-up experiments (isolate
 bench_epoch_report.py                     completed epochs / early stop / updates per run
 tests/                                    unit tests (spectral conv blocks, split hook, autocorrect, manifest)
 archive/                                  v1-config launcher and pre-reflection legacy script (provenance only)
-swan_repaired_v1/                         server package with the spectral fix and a proposed protocol change (see docs/VERSIONS.md)
+swan_repaired_v1/                         repaired two-year campaign trainer (see docs/EXPERIMENT_PROTOCOLS.md)
 ```
 
 ## Style for anything written into manuscripts
@@ -117,4 +123,5 @@ Talk to the user in Korean. Code, commit messages, comments, and docs in English
 See `docs/CAMPAIGN_20260922.md` for the added campaign packages and `docs/ASSISTANT_HANDOFF.md` for cross-assistant handoff. The legacy training/selection facts above describe the earlier workflow, not every newly added campaign. The repaired A/B/C campaign uses a fixed successful-update budget, validation Hs MAE with EMA weights, and saved train-only preprocessing. Its selected models use 2019-2020 training data and 2021 held-out evaluation. These policies must not be silently replaced with the legacy Kendall-loss selection or final-raw-weight policy.
 
 The delivered package source and its original Korean READMEs are preserved to retain their hashes. English `README.md` files are now the default package guides, with links to the Korean versions. Keep default documentation, code comments, and commit messages in English. Update the English guide when changing a workflow; retain Korean guides as optional translations and identify any version differences. Importing these files does not establish that the running server has this Git commit. Do not backfill historical run manifests with the new commit. The v5 three-year-training package is staged code, not a completed experiment. No robustness or additional HPO package has been implemented from the September 22 discussion.
+
 

@@ -77,11 +77,19 @@ class WorkflowTests(unittest.TestCase):
     def test_relative_wrapper_process_is_detected(self):
         import subprocess
         import sys
+        import time
         with tempfile.TemporaryDirectory() as tmp:
             server=Path(tmp);folder=server/'swan_iclr_campaign_v2';folder.mkdir()
-            (folder/'run_v2.py').write_text('import time; time.sleep(30)')
+            (folder/'run_v2.py').write_text(
+                'from pathlib import Path; import time; '
+                'Path("ready").write_text("ready"); time.sleep(30)')
             proc=subprocess.Popen([sys.executable,'-u','run_v2.py'],cwd=folder)
             try:
+                deadline=time.monotonic()+10
+                while not (folder/'ready').exists():
+                    self.assertIsNone(proc.poll(), 'Child exited before readiness')
+                    self.assertLess(time.monotonic(), deadline, 'Child readiness timed out')
+                    time.sleep(0.01)
                 detected=d.processes(server)
                 self.assertTrue(any(pid==proc.pid and str(folder/'run_v2.py') in args for pid,args in detected))
             finally:
@@ -141,3 +149,4 @@ class WorkflowTests(unittest.TestCase):
 
 
 if __name__=='__main__':unittest.main()
+

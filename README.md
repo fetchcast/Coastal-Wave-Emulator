@@ -1,3 +1,5 @@
+> **Source version: v2.1.1.** See [versions](docs/VERSIONS.md), [experiment–protocol mapping](docs/EXPERIMENT_PROTOCOLS.md), and [environment setup](docs/ENVIRONMENT.md). Legacy package names remain stable.
+
 > **September 2026 campaign update (`v2-benchmark`):** The frozen-budget campaign, per-family 2021 evaluation, and event diagnostics are now included. Start with [the campaign guide](docs/CAMPAIGN_20260922.md). Earlier workflows below remain for provenance; do not launch multiple controllers against the same run roots.
 
 # Coastal-Wave-Emulator
@@ -11,7 +13,7 @@ on this repository and live on different branches.
 | Paper | Branch | Tag | Hindcast | Status |
 |---|---|---|---|---|
 | Applied Ocean Research 2026 (UNet++–ConvLSTM emulator) | `main` | `v1.0-apor` | v1 | published; corrigendum in preparation |
-| Ten-architecture benchmark (in preparation) | `v2-benchmark` | `v2.0-run-20260904`, `v2.1` (pending) | v2 | this branch |
+| Ten-architecture benchmark (in preparation) | `v2-benchmark` | `v2.0-run-20260904`, current source `v2.1.1` (see version policy) | v2 | this branch |
 
 `docs/VERSIONS.md` records each tag with its hindcast version, boundary
 definition, direction transform, evaluation policy, and known issues.
@@ -20,7 +22,7 @@ repository.
 
 ---
 
-## Benchmark (`v2-benchmark` branch)
+## Historical benchmark recipe (legacy v2.0)
 
 Ten architectures (ConvLSTM, UNet-LSTM, FNO, F-FNO, TNO, U-FFNO, Swin, ViT,
 ConvNeXt-LSTM, Conv-Swin) are trained under one recipe on the v2 hindcast:
@@ -43,7 +45,7 @@ patch_train_fraction.py                    regenerates the follow-up copy from t
 followup_launcher.py                       R/D/L/B follow-up experiments in an isolated results root
 tests/                                     CPU unit tests (no data needed)
 archive/                                   v1-config launcher and pre-reflection legacy script (provenance)
-swan_repaired_v1/                          server package with the spectral fix and a proposed protocol change
+swan_repaired_v1/                          repaired two-year campaign trainer; separate protocol from legacy v2.0
 docs/VERSIONS.md                           tag table and open decisions
 ```
 
@@ -52,8 +54,9 @@ docs/VERSIONS.md                           tag table and open decisions
 Python 3.10 or later, PyTorch 2.x with CUDA for training, and numpy, pandas,
 xarray, netCDF4, scipy, matplotlib, tqdm, wavespectra (boundary spectra).
 The server that produced the benchmark ran Python 3.11, torch 2.9.1+cu130,
-numpy 1.26 on NVIDIA B200 GPUs. The unit tests need only numpy, pandas,
-pytest, and a CPU build of torch.
+numpy 1.26 on NVIDIA B200 GPUs. Campaign CPU tests also require scipy, matplotlib, and xarray. See
+`requirements-test.txt` and `docs/ENVIRONMENT.md`; GPU experiments require the
+existing compatible CUDA environment.
 
 ### Running the benchmark
 
@@ -313,4 +316,5 @@ Apache-2.0. See `LICENSE`.
 If you use this code or the trained weights, please cite the paper.
 A machine-readable citation file is provided in
 `apor_revision/CITATION.cff`.
+
 
