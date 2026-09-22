@@ -1,3 +1,5 @@
+> **Current source version: v2.1.1.** [Version policy](docs/VERSIONS.md) and [experiment mapping](docs/EXPERIMENT_PROTOCOLS.md) define the current protocol scope. Folder labels v3/v4/v41/v5 are retained compatibility aliases. Historical task/status statements below are not evidence of current server completion.
+
 # CLAUDE.md — Coastal-Wave-Emulator
 
 Repository for the SWAN coastal wave emulator and its benchmark (Korea
@@ -13,7 +15,7 @@ on this repository, and they live on different branches:
 | Paper | Branch | Tag | Hindcast | Boundary | Direction transform | Status |
 |---|---|---|---|---|---|---|
 | APOR 2026 (UNet++-ConvLSTM emulator) | `main` | `v1.0-apor` | v1 | segments defined in `apor_revision/boundspec_segments.py` (W01-W10, S01-S09, E03-E10; no northern boundary); misaligned against the ERA5 extraction points | rotation -90 deg | published; corrigendum in preparation |
-| EM&S benchmark (10 architectures) | `v2-benchmark` | `v2.x` | v2 | 37 segments, complete | reflection 270 - theta | in preparation; code to be imported from the training server |
+| EM&S benchmark (10 architectures) | `v2-benchmark` | `v2.x` | v2 | 37 segments, complete | reflection 270 - theta | in preparation |
 
 `main` carries the code that accompanies the published APOR paper: the legacy
 demo (`main.py`, `src/swan_emul/`) and the revision package
@@ -22,10 +24,9 @@ demo (`main.py`, `src/swan_emul/`) and the revision package
 `docs/CORRIGENDUM.md` and version bookkeeping in `docs/VERSIONS.md`.
 
 The v2 benchmark code (`train.py`, the legacy training script, evaluation and
-follow-up tools) is developed on the training server and enters this
-repository on the `v2-benchmark` branch. Until it is imported, tasks that
-need it (run-manifest hash, unit tests, `v2.0-run-20260904` tag) cannot be
-completed here.
+follow-up tools) lives on the `v2-benchmark` branch. It is developed on the
+training server; commit and tag here before a run, then pull the branch on
+the server so that `run_manifest.json` records the commit hash.
 
 ## Hard rules
 
@@ -42,7 +43,11 @@ completed here.
 - Do not "improve" scientific text or numbers on your own initiative. Numbers in
   manuscripts come only from CSV files produced by the pipeline.
 
-## Facts that must not drift (verified from code)
+## Historical v2.0 recipe and shared spectral correctness rule
+
+The recipe-specific statements below describe legacy v2.0; repaired protocol
+differences are in `docs/EXPERIMENT_PROTOCOLS.md`. The spectral correctness
+requirement applies to all new runs.
 
 - Data split: block-stratified, `bh=168, q=5, emb=12` -> train/val/test
   9770/1980/1980 samples (75 training blocks). Sample index t targets raw time
@@ -64,7 +69,7 @@ completed here.
   runs made with it are superseded and must be labelled as such.
 - Direction loss clips sin/cos components and the dot product without
   normalising the predicted vector; this is a known limitation kept for
-  comparability within the v2 benchmark. Do not change it inside v2.x.
+  comparability within the v2 benchmark. Preserve this rule for legacy v2.0 reproductions; the repaired protocol is documented separately.
 - Config search included `modes_x != modes_y` (32x64). Always report both.
 - Stage-2 config selection uses `val_loss_final` (Kendall loss), not RMSE.
 
@@ -84,18 +89,21 @@ docs/CORRIGENDUM.md                       v1 defects and v2 corrections (added w
 CLAUDE.md, TASKS.md                       standing rules and the task list
 ```
 
-`v2-benchmark` (EM&S, tags `v2.x`), once imported from the server:
+`v2-benchmark` (EM&S, tags `v2.x`), in addition to everything on `main`:
 
 ```
 train.py                                  launcher + worker (CONFIG dict at top)
 UNET_LSTM_V64_..._9input.py               legacy training script (benchmark)
 UNET_LSTM_V64_..._9input_followup.py      patched copy for follow-up (generated, committed)
+UNET_LSTM_V64_..._9input_followup.sha256.json   hashes of the original and the copy
 benchmark_inference_full_fixed.py         unified evaluation + figures
 bnd_leakage_report.py                     boundary corruption test
 patch_train_fraction.py                   builds the follow-up legacy copy
 followup_launcher.py                      R/D/L/B follow-up experiments (isolated root)
 bench_epoch_report.py                     completed epochs / early stop / updates per run
-tests/                                    unit tests (spectral conv blocks, split hook, autocorrect)
+tests/                                    unit tests (spectral conv blocks, split hook, autocorrect, manifest)
+archive/                                  v1-config launcher and pre-reflection legacy script (provenance only)
+swan_repaired_v1/                         repaired two-year campaign trainer (see docs/EXPERIMENT_PROTOCOLS.md)
 ```
 
 ## Style for anything written into manuscripts
@@ -108,3 +116,12 @@ semicolons. Claims proportional to evidence. Code comments in English.
 ## Working language
 
 Talk to the user in Korean. Code, commit messages, comments, and docs in English.
+
+
+## September 22, 2026 campaign scope
+
+See `docs/CAMPAIGN_20260922.md` for the added campaign packages and `docs/ASSISTANT_HANDOFF.md` for cross-assistant handoff. The legacy training/selection facts above describe the earlier workflow, not every newly added campaign. The repaired A/B/C campaign uses a fixed successful-update budget, validation Hs MAE with EMA weights, and saved train-only preprocessing. Its selected models use 2019-2020 training data and 2021 held-out evaluation. These policies must not be silently replaced with the legacy Kendall-loss selection or final-raw-weight policy.
+
+The delivered package source and its original Korean READMEs are preserved to retain their hashes. English `README.md` files are now the default package guides, with links to the Korean versions. Keep default documentation, code comments, and commit messages in English. Update the English guide when changing a workflow; retain Korean guides as optional translations and identify any version differences. Importing these files does not establish that the running server has this Git commit. Do not backfill historical run manifests with the new commit. The v5 three-year-training package is staged code, not a completed experiment. No robustness or additional HPO package has been implemented from the September 22 discussion.
+
+

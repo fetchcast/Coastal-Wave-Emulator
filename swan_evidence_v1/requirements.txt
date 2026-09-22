@@ -1,0 +1,3 @@
+numpy>=1.24
+# GPU benchmark uses the existing training environment's torch and dependencies.
+# Do not upgrade the training environment merely to run this package.

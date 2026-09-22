@@ -1,0 +1,12 @@
+{
+  "README_KO.md": "01375a6b76df1ce0b10b757445cf3bc8aba18a093abe2a31e1afe62c19d3ca3b",
+  "SOURCE_PROVENANCE.json": "d7dc591f736e0cb8da1300c3053355354453373ecc3c8ca30f3bd2b411103938",
+  "START_REPAIRED.sh": "4c2922da83f0fd6fbd3736e62d0ab5d3e5a5784c25d647ade7d12b41536939d3",
+  "VALIDATION.json": "8d6eeb141c127fb7abd0afd745a23f2460e8aa7a2f4bd85175bd0317fef96e49",
+  "bench_epoch_report.py": "5f6c073d725d87208db0c63e99abc1db98148e83c1d07602111e946b6f8c3e0d",
+  "legacy_repaired.py": "d71530b38bb01135d118655bcd6ded663ab80ee4ed5d85f109d5b99ee6598fc4",
+  "repair_support.py": "a5ba3b4f758248d8ce6143d4e6d7632b6308f0f19f769e7d0e0af4cbda67fa7f",
+  "run_repaired.py": "623c47d4bdf812602715c5392000ce349b60a8ff028cffd8f3f1e6dc80060e7a",
+  "selftest.py": "72924471c6c88a24a82ec09a115aa1ba59c5dc1b5c7bef50663ba9fbdb9078dd",
+  "train_repaired.py": "742676d72babb0152e214e76a15b601bab01e07852c9ddb7c2cae665d856dc81"
+}

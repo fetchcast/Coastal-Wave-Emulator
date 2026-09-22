@@ -1,0 +1,11 @@
+{
+  "source": "Uploaded manuscript architecture appendix plus explicit defaults from reviewed trainer",
+  "manuscript_sha256": "7fb0865e3f4093d05b645c67b9f5992f857eae2e798315a82074d676351963b6",
+  "historical_checkpoint_reproduction": false,
+  "additional_hyperparameter_search": false,
+  "notes": [
+    "Original seven per-run job manifests are not available; these fixed settings are not claimed to reproduce every historical setting.",
+    "Existing Fourier-family candidates and B/C selection remain unchanged.",
+    "Some architecture details absent from manuscript use reviewed implementation defaults; see plans.py and README."
+  ]
+}

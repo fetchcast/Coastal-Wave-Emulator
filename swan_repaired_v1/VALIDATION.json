@@ -1,0 +1,18 @@
+{
+  "status": "passed",
+  "scope": "CPU synthetic regression and NetCDF worker integration",
+  "regression_test_methods": 10,
+  "models_end_to_end": [
+    "fno",
+    "tno",
+    "ffno"
+  ],
+  "torch": "2.14.0+cpu",
+  "real_server_gpu_tested": false,
+  "real_boundary_helpers_tested": false,
+  "notes": [
+    "Full NetCDF worker integration used synthetic BND-off data.",
+    "Default server launch runs real-data smoke tests before the pilot.",
+    "Original FNO w384 d8 m48 follow-up is memory-blocked, not silently downsized."
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "README_KO.md": "f750aa1117c000e7441a6e2f05d386112bc34e77afc967558fc4739efabb2b48",
+  "START.sh": "4cd937e896aded03fb096fbcf0458eca8159f182614f91bf2e03e25036832690",
+  "analysis.py": "c8ee5c88153ec7561b0cb2075051db47ffa801c0d3ee028b47a1a0bf679af5ee",
+  "audit_training_period.py": "5dadf53e3b007feb91c88a247693461376846d85318f239b2cb29aba2d479601",
+  "campaign.py": "e5ce8929255e3a91dbacefe2cc2df994f35ffa32e22fd0dd9f283152fb1276bf",
+  "collect_report.py": "d4abebda3809808c78e6e6b215ff71432b7cd373e4a5165dfafaa5fb3ee5fc43",
+  "evaluate_2021.py": "bb14c6b6182fa52f79edefa94e248078dbcfab2ca277c14e150b88ebc12d28fb",
+  "historical_events.template.csv": "16296e5fa0097f8a2ba2d9d088e5a2875fc808c1e0b689548fc446b9706ac21c",
+  "run.py": "5cafb487a8025779bc7786d38c7591346259879e392000ff8114afa736fbdfde",
+  "test_diagnostics.py": "797bd1e41cf9f60a7fc44c570618ecf40aa34746f71747a2fdc0bf963a3719ca"
+}

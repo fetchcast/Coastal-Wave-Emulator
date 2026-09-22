@@ -1,0 +1,14 @@
+{
+  "same_domain_forcing_output_contract": false,
+  "timing_scope": "solver_core",
+  "domain": "REPLACE",
+  "forcing_period": "REPLACE",
+  "grid": "REPLACE",
+  "hardware": "REPLACE with CPU model, cores, MPI ranks, RAM",
+  "command": "REPLACE with actual SWAN invocation",
+  "outputs_description": "REPLACE with matching hourly Hs/Tm/direction spatial outputs",
+  "timing_log": "REPLACE with preserved measurement log path",
+  "wall_seconds": null,
+  "output_frames": null,
+  "emulator_input_shape": null
+}
