@@ -188,3 +188,11 @@ the manuscript. Raw buoy files stay out of git. This repository has its own
   CSVs that the papers cite are archived on Zenodo with the release.
 - Do not touch `main` after `v1.0-apor` except to add `docs/CORRIGENDUM.md`.
 - Do not run or stop training jobs. Repository work only.
+
+
+## September 22, 2026 source synchronization
+
+Added the delivered campaign packages through v4.1, the staged v5 workflow, evidence/plotting utilities, and event diagnostics. See `docs/CAMPAIGN_20260922.md` for the authoritative package status. The four `swan_repaired_v1` trainer sources already match the supplied server copies and were not replaced. Existing model code, published APOR files, results, and running jobs were not changed.
+
+Validation at import: 70 package unit tests, 69 passed and one synthetic NetCDF test skipped because its optional backend is unavailable; Python source parsing and package SHA256 verification passed. These are local CPU checks, not new full-GPU training runs. Tag the reviewed source before the next new experiment as required above; previously started runs retain their original provenance.
+

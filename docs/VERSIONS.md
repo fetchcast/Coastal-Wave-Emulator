@@ -55,3 +55,9 @@ full re-run of every architecture, not only FNO and TNO.
   (server name `train_v1_backup.py`); `archive/UNET_LSTM_V64_..._v1_original.py`
   is the legacy script before the reflection candidates were added to the
   autocorrect. Both are kept for provenance and are not run.
+
+
+## September 22, 2026 campaign source import
+
+The delivered campaign and analysis source packages were added to `v2-benchmark` after the September 12 snapshot. This import preserves the existing repaired trainer and published-code files. See [CAMPAIGN_20260922.md](CAMPAIGN_20260922.md) for package order, dependencies, and experiment status. v4.1 is the current supplied controller; v5 is staged and must not be described as a completed three-year experiment. This source import does not retroactively assign a Git commit or tag to earlier server runs.
+

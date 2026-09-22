@@ -24,3 +24,7 @@ __pycache__/
 .DS_Store
 *~
 *.bak
+
+# Empty historical-event input template, not experiment results.
+!swan_event_diagnostics_v1/historical_events.template.csv
+

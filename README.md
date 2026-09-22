@@ -1,3 +1,5 @@
+> **September 2026 campaign update (`v2-benchmark`):** The frozen-budget campaign, per-family 2021 evaluation, and event diagnostics are now included. Start with [the campaign guide](docs/CAMPAIGN_20260922.md). Earlier workflows below remain for provenance; do not launch multiple controllers against the same run roots.
+
 # Coastal-Wave-Emulator
 
 Neural-network emulators of a Delft3D-FM / SWAN wave hindcast of Korean
@@ -309,3 +311,4 @@ Apache-2.0. See `LICENSE`.
 If you use this code or the trained weights, please cite the paper.
 A machine-readable citation file is provided in
 `apor_revision/CITATION.cff`.
+

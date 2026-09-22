@@ -1,0 +1,18 @@
+{
+  "run_repaired.py": {
+    "original_sha256": "623c47d4bdf812602715c5392000ce349b60a8ff028cffd8f3f1e6dc80060e7a",
+    "v5_sha256": "623c47d4bdf812602715c5392000ce349b60a8ff028cffd8f3f1e6dc80060e7a"
+  },
+  "train_repaired.py": {
+    "original_sha256": "742676d72babb0152e214e76a15b601bab01e07852c9ddb7c2cae665d856dc81",
+    "v5_sha256": "105c18d67518c9ad3ff1232d14799382b16578f19946fdfa04ae557a463a30bc"
+  },
+  "repair_support.py": {
+    "original_sha256": "a5ba3b4f758248d8ce6143d4e6d7632b6308f0f19f769e7d0e0af4cbda67fa7f",
+    "v5_sha256": "af5290f3df35fca8c40df862a7c92ba18cd07a38778611402b1d29166f3c8c02"
+  },
+  "legacy_repaired.py": {
+    "original_sha256": "d71530b38bb01135d118655bcd6ded663ab80ee4ed5d85f109d5b99ee6598fc4",
+    "v5_sha256": "8f00f99ddd50c77bf7d1080d3331e79abaff7d25c7d058037c83a767b4537d85"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "region_id": "DIFFERENT_COAST",
+  "excluded_from_training_and_selection": true,
+  "adaptation": "none",
+  "grid_mapping": "Describe actual coordinates, resampling and out-of-domain handling",
+  "forcing_contract": "Describe matching wind and boundary variables and their units",
+  "target_units": "Hs in meters",
+  "mask_policy": "Describe wet-cell mask and spatial weighting",
+  "normalization_policy": "Frozen original training normalization; no target-region fitting",
+  "evaluation_code_sha256": "REPLACE with actual evaluator hash",
+  "checkpoint_sha256_by_model": {
+    "fno": {"42":"REPLACE","43":"REPLACE","44":"REPLACE"},
+    "ffno": {"42":"REPLACE","43":"REPLACE","44":"REPLACE"},
+    "tno": {"42":"REPLACE","43":"REPLACE","44":"REPLACE"}
+  },
+  "metrics_csv": "other_coast_metrics.csv"
+}

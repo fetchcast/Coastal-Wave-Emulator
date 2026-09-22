@@ -1,0 +1,12 @@
+{
+  "README_KO.md": "9111223819d3824c2d7a6b46dabfd31627ae9f94fed3539ea5976dd65d3168c5",
+  "analyze.py": "4a3226db26a966b9d859fc0244edc9cacab8a85edbf78f0d8a01fa22a7738e67",
+  "benchmark_inference.py": "e9ae3ee89a3f5899c675b4454182396d6fb14f3e64cf70d686c50a6822366d0f",
+  "compare_speed.py": "2e47371d1bf9bb8e19a345523ff3ca424897693e39849ebb7f1b5a9addb01b5f",
+  "geography.py": "e1b42d5f6799fcbf6dd4d1f700f6cf95a16c722d0c5e5236526cc352842e5448",
+  "region_example.schema.json": "c040097d95341e605fdc4f621716190552027c67cadde4cfd6073e42119c8281",
+  "regions.template.json": "808d0cde3aa6fea233a40451f09b10d63a0819b8c12bd70049ce28ae9b415534",
+  "requirements.txt": "72d3088655e1e061016880cbbf6b07b30689c7faa7c2d5178ea0a990a0a426c4",
+  "swan_baseline.template.json": "def67db68f1172c4b18d6533b0a7e789cd1dd40151c307e8f2cd61a6af019fc3",
+  "test_analysis.py": "d0cc0053c268eefa8b1b053685488df29f9d30a425e4161cd02e73c530646e29"
+}

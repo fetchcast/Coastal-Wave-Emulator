@@ -110,3 +110,11 @@ semicolons. Claims proportional to evidence. Code comments in English.
 ## Working language
 
 Talk to the user in Korean. Code, commit messages, comments, and docs in English.
+
+
+## September 22, 2026 campaign scope
+
+See `docs/CAMPAIGN_20260922.md` for the added campaign packages and `docs/ASSISTANT_HANDOFF.md` for cross-assistant handoff. The legacy training/selection facts above describe the earlier workflow, not every newly added campaign. The repaired A/B/C campaign uses a fixed successful-update budget, validation Hs MAE with EMA weights, and saved train-only preprocessing. Its selected models use 2019-2020 training data and 2021 held-out evaluation. These policies must not be silently replaced with the legacy Kendall-loss selection or final-raw-weight policy.
+
+The delivered package source and its original Korean READMEs were imported without translation to preserve hashes. New repository-level documentation is in English. Importing these files does not establish that the running server has this Git commit. Do not backfill historical run manifests with the new commit. The v5 three-year-training package is staged code, not a completed experiment. No robustness or additional HPO package has been implemented from the September 22 discussion.
+

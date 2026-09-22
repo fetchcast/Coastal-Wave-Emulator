@@ -1,0 +1,36 @@
+{
+  "version": "heldout-typhoon-2022-v5",
+  "selection_metric": "validation_hs_mae_ema",
+  "selection_pool": "Frozen v3 two-year choices; same architecture/hyperparameters for new three-year fits",
+  "seeds": [
+    42,
+    43,
+    44
+  ],
+  "year": 2022,
+  "event_source": "JMA RSMC Tokyo best-track text",
+  "event_distance_km": 400.0,
+  "event_padding_hours": 24,
+  "event_definition": "First through last hourly interpolated TS-or-higher center within 400 km of any wet grid center, padded by 24 hours on each side; one window per named cyclone.",
+  "tc_grades": [
+    3,
+    4,
+    5,
+    9
+  ],
+  "typhoon_definition": "Storm attained JMA grade 5 at least once in its recorded lifetime; reported separately from all named tropical cyclones.",
+  "high_wave_thresholds_m": [
+    3.0,
+    5.0
+  ],
+  "tm_qc_threshold_s": 30.0,
+  "spatial_mask": "uniform kcs > 0",
+  "first_context_hours": 12,
+  "event_overlap_policy": "Keep each event separately; use union masks for pooled event and non-event metrics.",
+  "non_event_label": "outside_selected_TC_windows; not necessarily calm",
+  "snapshot_policy": "One fixed snapshot at the truth domain-maximum Hs time per event; no prediction-based selection.",
+  "peak_policy": "Domain maximum Hs amplitude and timing; also prediction at the true peak location and true peak time. Domain maxima can occur at different locations.",
+  "uncertainty": "Report three-seed mean and sample SD; no significance test on correlated hourly samples.",
+  "training_changes": "Three-year development span, fresh split and normalization, fixed successful-update budget",
+  "year2022_training_or_tuning": false
+}
